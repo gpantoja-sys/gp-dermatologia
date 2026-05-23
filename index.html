@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GP Derma">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#111111">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <title>GP — Dr. Gonzalo Pantoja</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -228,7 +235,7 @@ async function rPtDash(){
         <div style="width:1px;height:20px;background:#333"></div>
         <div><p style="font-size:13px;font-weight:600;color:#fff">${p.nombre.split(' ')[0]}</p><p style="font-size:10px;color:#666;letter-spacing:1px;text-transform:uppercase">Paciente</p></div>
       </div>
-      <button class="btn sm" onclick="go('home')" style="background:transparent;border-color:#333;color:#888">Salir</button>
+      <button class="btn sm" onclick="logout()" style="background:transparent;border-color:#333;color:#888">Salir</button>
     </div>
     <div class="tabbar">
       <button class="tab ${ptab==='t'?'on':''}" onclick="ptSwitch('t')">📋 Tratamientos</button>
@@ -679,7 +686,35 @@ async function tStats(el){
   </div>`;
 }
 
+
+// Check for saved session on load
+if(window._savedSession) {
+  const p = window._savedSession;
+  S.pt = p;
+  S.scr = 'ptd';
+}
+function logout(){ localStorage.removeItem('gp_session'); S.pt=null; go('home'); }
 render();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js');
+  });
+}
+// Session persistence using localStorage
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('gp_session');
+  if(saved){
+    try {
+      const sess = JSON.parse(saved);
+      if(sess && sess.rut) {
+        // Will be picked up by render()
+        window._savedSession = sess;
+      }
+    } catch(e) {}
+  }
+});
 </script>
 </body>
 </html>
