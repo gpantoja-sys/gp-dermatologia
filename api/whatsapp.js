@@ -25,16 +25,19 @@ export default async function handler(req, res) {
     numeroFinal = '56' + soloDigitos;
   }
 
+  // Whaticket espera un array de mensajes
   const payload = {
     whatsappId: '3c28baaa-9e97-4392-8398-188b6520b262',
-    number: numeroFinal,
-    body,
-    name: name || ''
+    messages: [
+      {
+        number: numeroFinal,
+        body,
+        name: name || ''
+      }
+    ]
   };
 
-  // Log para debugging
-  console.log('Payload enviado a Whaticket:', JSON.stringify(payload));
-  console.log('Token (primeros 20 chars):', token.substring(0, 20));
+  console.log('Payload enviado:', JSON.stringify(payload));
 
   try {
     const response = await fetch('https://api.whaticket.com/api/v1/messages', {
@@ -47,21 +50,16 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    console.log('Respuesta Whaticket status:', response.status);
-    console.log('Respuesta Whaticket body:', JSON.stringify(data));
+    console.log('Respuesta status:', response.status);
+    console.log('Respuesta body:', JSON.stringify(data));
 
     if (!response.ok) {
-      return res.status(response.status).json({ 
-        error: data.message || 'Error Whaticket', 
-        detail: data,
-        payload_sent: payload
-      });
+      return res.status(response.status).json({ error: data.message || 'Error Whaticket', detail: data });
     }
 
     return res.status(200).json({ ok: true, data });
 
   } catch (err) {
-    console.log('Error catch:', err.message);
-    return res.status(500).json({ error: 'Error de conexión con Whaticket', detail: err.message });
+    return res.status(500).json({ error: 'Error de conexión', detail: err.message });
   }
 }
