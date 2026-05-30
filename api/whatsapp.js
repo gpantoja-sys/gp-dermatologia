@@ -22,15 +22,9 @@ export default async function handler(req, res) {
   const soloDigitos = number.replace(/\D/g, '');
 
   // Whaticket espera formato: 56912345678 (sin + ni espacios)
-  // Si ya empieza con 56 y tiene 11 dígitos → correcto
-  // Si empieza con 9 y tiene 9 dígitos → agregar 56
   let numeroFinal = soloDigitos;
   if (soloDigitos.length === 9 && soloDigitos.startsWith('9')) {
     numeroFinal = '56' + soloDigitos;
-  } else if (soloDigitos.length === 11 && soloDigitos.startsWith('569')) {
-    numeroFinal = soloDigitos; // ya correcto
-  } else if (soloDigitos.startsWith('56')) {
-    numeroFinal = soloDigitos;
   }
 
   try {
@@ -41,7 +35,7 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
-        whatsappId: '56966453801',
+        whatsappId: '3c28baaa-9e97-4392-8398-188b6520b262',
         number: numeroFinal,
         body,
         name: name || ''
