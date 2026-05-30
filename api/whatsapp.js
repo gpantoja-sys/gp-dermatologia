@@ -18,14 +18,23 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Token no configurado en servidor' });
   }
 
-  // Limpiar número: quitar todo excepto dígitos
+  // Limpiar número
   const soloDigitos = number.replace(/\D/g, '');
-
-  // Whaticket espera formato: 56912345678 (sin + ni espacios)
   let numeroFinal = soloDigitos;
   if (soloDigitos.length === 9 && soloDigitos.startsWith('9')) {
     numeroFinal = '56' + soloDigitos;
   }
+
+  const payload = {
+    whatsappId: '3c28baaa-9e97-4392-8398-188b6520b262',
+    number: numeroFinal,
+    body,
+    name: name || ''
+  };
+
+  // Log para debugging
+  console.log('Payload enviado a Whaticket:', JSON.stringify(payload));
+  console.log('Token (primeros 20 chars):', token.substring(0, 20));
 
   try {
     const response = await fetch('https://api.whaticket.com/api/v1/messages', {
@@ -34,23 +43,25 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({
-        whatsappId: '3c28baaa-9e97-4392-8398-188b6520b262',
-        number: numeroFinal,
-        body,
-        name: name || ''
-      })
+      body: JSON.stringify(payload)
     });
 
     const data = await response.json();
+    console.log('Respuesta Whaticket status:', response.status);
+    console.log('Respuesta Whaticket body:', JSON.stringify(data));
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: data.message || 'Error Whaticket', detail: data });
+      return res.status(response.status).json({ 
+        error: data.message || 'Error Whaticket', 
+        detail: data,
+        payload_sent: payload
+      });
     }
 
     return res.status(200).json({ ok: true, data });
 
   } catch (err) {
+    console.log('Error catch:', err.message);
     return res.status(500).json({ error: 'Error de conexión con Whaticket', detail: err.message });
   }
 }
