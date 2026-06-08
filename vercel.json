@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/whaticket-sync",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}
