@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GP Dermatología — CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --ink: #1a1a18;
+  --ink2: #3d3d3a;
+  --ink3: #888780;
+  --ink4: #b4b2a9;
+  --paper: #f8f7f4;
+  --white: #ffffff;
+  --border: rgba(26,26,24,.1);
+  --border2: rgba(26,26,24,.06);
+  --green: #0f6e56;
+  --green-light: #e1f5ee;
+  --purple: #3c3489;
+  --purple-light: #eeedfe;
+  --amber: #854f0b;
+  --amber-light: #faeeda;
+  --red: #a32d2d;
+  --red-light: #fcebeb;
+  --blue: #185fa5;
+  --blue-light: #e6f1fb;
+  --sidebar-w: 220px;
+  --header-h: 56px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;display:flex;font-size:14px}
+
+/* SIDEBAR */
+#sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100}
+.logo-wrap{padding:28px 24px 24px;border-bottom:1px solid var(--border2)}
+.logo-gp{display:flex;align-items:center;gap:12px}
+.logo-mark{width:44px;height:38px;position:relative;flex-shrink:0}
+.logo-mark svg{width:44px;height:38px}
+.logo-text{display:flex;flex-direction:column}
+.logo-name{font-family:'Cormorant',serif;font-size:15px;font-weight:400;letter-spacing:.12em;color:var(--ink);text-transform:uppercase}
+.logo-sub{font-size:9px;letter-spacing:.14em;color:var(--ink3);text-transform:uppercase;margin-top:1px}
+
+.nav-section{padding:20px 16px 6px;font-size:9px;letter-spacing:.14em;color:var(--ink4);text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:12px;color:var(--ink3);cursor:pointer;transition:.15s;border-left:2px solid transparent;letter-spacing:.01em}
+.nav-item:hover{color:var(--ink);background:var(--paper)}
+.nav-item.active{color:var(--ink);border-left-color:var(--ink);background:var(--paper);font-weight:500}
+.nav-item i{font-size:16px;flex-shrink:0}
+.nav-bottom{margin-top:auto;border-top:1px solid var(--border2);padding:12px 0}
+
+/* MAIN */
+#main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+
+/* HEADER */
+#header{height:var(--header-h);background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:50}
+.header-left h1{font-family:'Cormorant',serif;font-size:18px;font-weight:400;letter-spacing:.04em;color:var(--ink)}
+.header-left p{font-size:11px;color:var(--ink3);margin-top:1px;letter-spacing:.01em}
+.header-right{display:flex;align-items:center;gap:10px}
+.hbtn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink3);transition:.15s}
+.hbtn:hover{background:var(--paper);color:var(--ink)}
+.hbtn i{font-size:16px}
+.user-chip{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border:1px solid var(--border);border-radius:20px;cursor:pointer}
+.user-av{width:26px;height:26px;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:var(--white);font-family:'Cormorant',serif;letter-spacing:.05em}
+.user-name{font-size:12px;color:var(--ink);letter-spacing:.01em}
+
+/* CONTENT */
+#content{padding:24px 28px;flex:1}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.stat-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px}
+.stat-value{font-family:'Cormorant',serif;font-size:26px;font-weight:400;color:var(--ink);line-height:1}
+.stat-sub{font-size:10px;color:var(--ink4);margin-top:4px}
+.stat-accent{font-size:10px;color:var(--green);margin-top:4px;font-weight:500}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap}
+.toolbar-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.search-wrap{display:flex;align-items:center;gap:8px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:0 12px;height:34px;min-width:200px}
+.search-wrap input{border:none;background:transparent;font-size:12px;color:var(--ink);outline:none;width:100%;font-family:'DM Sans',sans-serif}
+.search-wrap i{font-size:15px;color:var(--ink3)}
+.sel{height:34px;font-size:12px;padding:0 10px;background:var(--white);border:1px solid var(--border);border-radius:8px;color:var(--ink);cursor:pointer;font-family:'DM Sans',sans-serif;appearance:none;padding-right:28px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888780' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+
+.pipe-tabs{display:flex;gap:4px}
+.pipe-tab{padding:5px 14px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--ink3);transition:.15s;letter-spacing:.02em;font-family:'DM Sans',sans-serif}
+.pipe-tab:hover{color:var(--ink);background:var(--paper)}
+.pipe-tab.p-all.act{background:var(--ink);color:var(--white);border-color:var(--ink)}
+.pipe-tab.p-1.act{background:var(--blue-light);color:var(--blue);border-color:rgba(24,95,165,.2)}
+.pipe-tab.p-2.act{background:var(--purple-light);color:var(--purple);border-color:rgba(60,52,137,.2)}
+.pipe-tab.p-3.act{background:var(--amber-light);color:var(--amber);border-color:rgba(133,79,11,.2)}
+
+.btn-new{height:34px;padding:0 16px;background:var(--ink);border:none;border-radius:8px;color:var(--white);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;letter-spacing:.02em;transition:.15s}
+.btn-new:hover{background:var(--ink2)}
+.btn-new i{font-size:14px}
+
+/* TABLE */
+.table-wrap{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+thead{background:var(--paper)}
+thead th{padding:9px 12px;text-align:left;font-size:9px;font-weight:500;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid var(--border)}
+tbody tr{border-bottom:1px solid var(--border2);cursor:pointer;transition:.1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#fafaf8}
+tbody td{padding:10px 12px;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.col-pac{width:160px}.col-pip{width:70px}.col-ori{width:90px}.col-est{width:130px}
+.col-res{width:65px}.col-acc{width:140px}.col-fec{width:75px}.col-val{width:85px}
+.col-bp{width:60px}.col-dot{width:36px}
+
+.pac-av{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0;font-family:'Cormorant',serif;letter-spacing:.04em}
+.pac-name{font-size:12px;font-weight:500;color:var(--ink);display:block;overflow:hidden;text-overflow:ellipsis}
+.pac-tel{font-size:10px;color:var(--ink3)}
+
+.badge{display:inline-flex;align-items:center;font-size:9px;font-weight:500;padding:3px 8px;border-radius:20px;white-space:nowrap;letter-spacing:.04em;text-transform:uppercase}
+.b-p1{background:var(--blue-light);color:var(--blue)}
+.b-p2{background:var(--purple-light);color:var(--purple)}
+.b-p3{background:var(--amber-light);color:var(--amber)}
+.b-nuevo{background:#f1efe8;color:#444441}
+.b-contactado,.b-respondio{background:var(--blue-light);color:var(--blue)}
+.b-calificado{background:#e6f1fb;color:#0c447c}
+.b-hora,.b-presupuesto,.b-enviado,.b-decision,.b-reactiv{background:var(--amber-light);color:var(--amber)}
+.b-agendado,.b-confirmado,.b-reservo{background:#eaf3de;color:#3b6d11}
+.b-asistio,.b-evaluacion{background:#eaf3de;color:#27500a}
+.b-plan{background:var(--purple-light);color:var(--purple)}
+.b-realizado,.b-control,.b-mantencion,.b-seguimiento{background:var(--green-light);color:var(--green)}
+.b-fid-reg{background:var(--ink);color:var(--white)}
+.b-fid-bp{background:var(--purple);color:var(--white)}
+.b-perdido{background:var(--red-light);color:var(--red)}
+.b-antiguo{background:#f1efe8;color:#444441}
+
+.ori-badge{font-size:10px;color:var(--ink2);display:flex;align-items:center;gap:4px}
+.ori-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+
+.bp-diamond{font-size:15px}
+.dots-btn{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:16px;padding:2px;border-radius:4px}
+.dots-btn:hover{color:var(--ink);background:var(--paper)}
+
+.pag{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border2);font-size:11px;color:var(--ink3)}
+.pag-btns{display:flex;gap:3px}
+.pag-btn{height:26px;min-width:26px;padding:0 6px;border:1px solid var(--border);border-radius:6px;background:transparent;font-size:11px;cursor:pointer;color:var(--ink);font-family:'DM Sans',sans-serif}
+.pag-btn.act{background:var(--ink);color:var(--white);border-color:var(--ink)}
+
+/* MODAL OVERLAY */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(26,26,24,.4);z-index:200;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--white);border-radius:14px;width:520px;max-width:96vw;padding:0;overflow:hidden}
+.modal-head{padding:20px 24px 16px;border-bottom:1px solid var(--border2);display:flex;justify-content:space-between;align-items:center}
+.modal-head h2{font-family:'Cormorant',serif;font-size:20px;font-weight:400;color:var(--ink);letter-spacing:.03em}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:20px;padding:2px}
+.modal-body{padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:12px;max-height:70vh;overflow-y:auto}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg.full{grid-column:1/-1}
+.fg label{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);font-weight:500}
+.fg input,.fg select,.fg textarea{font-size:12px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--white);color:var(--ink);font-family:'DM Sans',sans-serif;outline:none;transition:.15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--ink);outline:none}
+.fg textarea{resize:vertical;min-height:56px}
+.fg select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888780' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:28px}
+.sect-div{grid-column:1/-1;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink4);padding-top:8px;border-top:1px solid var(--border2);margin-top:4px}
+.toggle-row{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}
+.toggle-row span{font-size:12px;color:var(--ink)}
+.tgl{position:relative;width:36px;height:20px}
+.tgl input{opacity:0;width:0;height:0}
+.tgl-sl{position:absolute;inset:0;background:var(--border);border-radius:20px;cursor:pointer;transition:.2s}
+.tgl-sl:before{content:'';position:absolute;height:14px;width:14px;left:3px;bottom:3px;background:var(--white);border-radius:50%;transition:.2s}
+.tgl input:checked+.tgl-sl{background:var(--ink)}
+.tgl input:checked+.tgl-sl:before{transform:translateX(16px)}
+.modal-foot{padding:16px 24px;border-top:1px solid var(--border2);display:flex;justify-content:flex-end;gap:8px}
+.btn-cancel{height:34px;padding:0 16px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--ink);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-save{height:34px;padding:0 16px;background:var(--ink);border:none;border-radius:8px;color:var(--white);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px}
+
+/* LOST MODAL */
+.lost-bg{display:none;position:fixed;inset:0;background:rgba(26,26,24,.4);z-index:200;align-items:center;justify-content:center}
+.lost-bg.open{display:flex}
+.lost-modal{background:var(--white);border-radius:14px;width:380px;max-width:96vw;overflow:hidden}
+.btn-close-red{height:34px;padding:0 16px;background:var(--red);border:none;border-radius:8px;color:var(--white);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px}
+
+/* LOADING */
+#loading{position:fixed;inset:0;background:var(--white);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px}
+.loading-logo{font-family:'Cormorant',serif;font-size:32px;font-weight:300;letter-spacing:.2em;color:var(--ink);text-transform:uppercase}
+.loading-sub{font-size:10px;letter-spacing:.2em;color:var(--ink3);text-transform:uppercase}
+.loading-bar{width:120px;height:1px;background:var(--border);border-radius:1px;overflow:hidden;margin-top:8px}
+.loading-fill{height:100%;background:var(--ink);animation:load 1.5s ease-in-out infinite}
+@keyframes load{0%{width:0;margin-left:0}50%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
+
+/* EMPTY STATE */
+.empty{padding:48px;text-align:center;color:var(--ink3)}
+.empty i{font-size:32px;margin-bottom:12px;display:block}
+.empty p{font-size:13px}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loading-logo">GP</div>
+  <div class="loading-sub">Dermatología · CRM</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+</div>
+
+<div id="sidebar">
+  <div class="logo-wrap">
+    <div class="logo-gp">
+      <div class="logo-mark">
+        <svg viewBox="0 0 52 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- G: círculo abierto arriba-derecha, línea horizontal al centro -->
+          <path d="M30 6 A18 18 0 1 0 30 42" stroke="#1a1a18" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <!-- Línea horizontal de la G hacia la P -->
+          <line x1="30" y1="24" x2="36" y2="24" stroke="#1a1a18" stroke-width="1.8" stroke-linecap="round"/>
+          <!-- Palo vertical de la P (sube desde línea hacia arriba y baja hacia abajo) -->
+          <line x1="36" y1="8" x2="36" y2="44" stroke="#1a1a18" stroke-width="1.8" stroke-linecap="round"/>
+          <!-- Arco de la P -->
+          <path d="M36 8 Q52 8 52 18 Q52 28 36 28" stroke="#1a1a18" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <span class="logo-name">Gonzalo Pantoja</span>
+        <span class="logo-sub">CRM · Gestión clínica</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-section">Principal</div>
+  <div class="nav-item active" onclick="setView('pacientes',this)"><i class="ti ti-users"></i>Pacientes</div>
+  <div class="nav-item" onclick="setView('seguimientos',this)"><i class="ti ti-calendar-clock"></i>Seguimientos</div>
+  <div class="nav-item" onclick="setView('blueprint',this)"><i class="ti ti-diamond"></i>Blueprint</div>
+
+  <div class="nav-section">Reportes</div>
+  <div class="nav-item" onclick="setView('metricas',this)"><i class="ti ti-chart-bar"></i>Métricas</div>
+
+  <div class="nav-section">Sistema</div>
+  <div class="nav-item" onclick="setView('config',this)"><i class="ti ti-settings"></i>Configuración</div>
+
+  <div class="nav-bottom">
+    <div class="nav-item"><i class="ti ti-logout"></i>Salir</div>
+  </div>
+</div>
+
+<div id="main">
+  <div id="header">
+    <div class="header-left">
+      <h1 id="page-title">Pacientes y leads</h1>
+      <p id="page-sub" id="page-sub"></p>
+    </div>
+    <div class="header-right">
+      <button class="hbtn" title="Notificaciones"><i class="ti ti-bell"></i></button>
+      <button class="hbtn" title="Actualizar" onclick="loadData()"><i class="ti ti-refresh"></i></button>
+      <div class="user-chip">
+        <div class="user-av">GP</div>
+        <span class="user-name">Dr. Pantoja</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total leads</div>
+        <div class="stat-value" id="s-total">—</div>
+        <div class="stat-sub">registros activos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Agendados</div>
+        <div class="stat-value" id="s-agendados">—</div>
+        <div class="stat-sub">pendientes confirmar</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tratados</div>
+        <div class="stat-value" id="s-tratados">—</div>
+        <div class="stat-sub">con acceso App</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pipeline</div>
+        <div class="stat-value" id="s-valor">—</div>
+        <div class="stat-sub">valor estimado</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Blueprint</div>
+        <div class="stat-value" id="s-bp">—</div>
+        <div class="stat-sub" id="s-bp-sub">activos</div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input type="text" id="search" placeholder="Buscar paciente, teléfono…" oninput="applyFilters()">
+        </div>
+        <select class="sel" id="f-estado" onchange="applyFilters()">
+          <option value="">Todos los estados</option>
+        </select>
+        <select class="sel" id="f-origen" onchange="applyFilters()">
+          <option value="">Todos los orígenes</option>
+          <option>WhatsApp</option><option>Instagram</option><option>Google Ads</option>
+          <option>YouTube</option><option>TikTok</option><option>LinkedIn</option>
+          <option>Google Maps</option><option>dermatologia.cl</option>
+          <option>Referido</option><option>Paciente antiguo</option>
+        </select>
+        <select class="sel" id="f-resp" onchange="applyFilters()">
+          <option value="">Todos</option>
+          <option>Caro</option><option>Paz</option><option>Valentina</option>
+        </select>
+        <select class="sel" id="f-bp" onchange="applyFilters()">
+          <option value="">Blueprint</option>
+          <option value="cand">Candidato</option>
+          <option value="act">Activo</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="pipe-tabs">
+          <button class="pipe-tab p-all act" onclick="setPipe('all',this)">Todos</button>
+          <button class="pipe-tab p-1" onclick="setPipe('1',this)">P1 · Consulta</button>
+          <button class="pipe-tab p-2" onclick="setPipe('2',this)">P2 · Premium</button>
+          <button class="pipe-tab p-3" onclick="setPipe('3',this)">P3 · Reactivación</button>
+        </div>
+        <button class="btn-new" onclick="openModal()"><i class="ti ti-plus"></i> Nuevo lead</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-pac">Paciente</th>
+            <th class="col-pip">Pipeline</th>
+            <th class="col-ori">Origen</th>
+            <th class="col-est">Estado</th>
+            <th class="col-res">Resp.</th>
+            <th class="col-acc">Próxima acción</th>
+            <th class="col-fec">Seguimiento</th>
+            <th class="col-val">Ticket est.</th>
+            <th class="col-bp">Blueprint</th>
+            <th class="col-dot"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="pag">
+        <span id="pag-info">Cargando…</span>
+        <div class="pag-btns">
+          <button class="pag-btn act">1</button>
+          <button class="pag-btn">2</button>
+          <button class="pag-btn">›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVO LEAD -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Nuevo lead</h2>
+      <button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="fg full"><label>Nombre completo</label><input type="text" id="m-nombre" placeholder="Ej: Valentina Riquelme"></div>
+      <div class="fg"><label>Apellido</label><input type="text" id="m-apellido" placeholder="Apellido"></div>
+      <div class="fg"><label>Teléfono / WhatsApp</label><input type="text" id="m-tel" placeholder="+56 9 XXXX XXXX"></div>
+      <div class="fg"><label>Email</label><input type="email" id="m-email" placeholder="email@ejemplo.com"></div>
+      <div class="fg"><label>RUT</label><input type="text" id="m-rut" placeholder="12.345.678-9"></div>
+      <div class="fg"><label>Origen del lead</label>
+        <select id="m-origen">
+          <option>WhatsApp</option><option>Instagram</option><option>Google Ads</option>
+          <option>YouTube</option><option>TikTok</option><option>LinkedIn</option>
+          <option>Google Maps</option><option>dermatologia.cl</option>
+          <option>Referido</option><option>Paciente antiguo</option>
+        </select>
+      </div>
+      <div class="fg"><label>Pipeline</label>
+        <select id="m-pipe" onchange="updateEstadosModal()">
+          <option value="1">P1 · Consulta general</option>
+          <option value="2">P2 · Tratamientos premium</option>
+          <option value="3">P3 · Reactivación</option>
+        </select>
+      </div>
+      <div class="fg"><label>Estado inicial</label><select id="m-estado"></select></div>
+      <div class="fg"><label>Tipo de paciente</label>
+        <select id="m-tipo">
+          <option>Lead</option><option>Paciente consulta</option>
+          <option>Paciente tratado</option><option>Paciente recurrente</option><option>Blueprint</option>
+        </select>
+      </div>
+      <div class="fg"><label>Interés principal</label>
+        <select id="m-interes">
+          <option>Láser</option><option>Melasma</option><option>Rosácea</option>
+          <option>Acné</option><option>Botox</option><option>Pelo</option>
+          <option>Cáncer de piel</option><option>Otro</option>
+        </select>
+      </div>
+      <div class="fg"><label>Ticket estimado</label>
+        <select id="m-ticket-est">
+          <option>Bajo</option><option>Medio</option><option>Alto</option><option>Premium</option>
+        </select>
+      </div>
+      <div class="fg"><label>Responsable</label>
+        <select id="m-resp"><option>Caro</option><option>Paz</option><option>Valentina</option></select>
+      </div>
+      <div class="fg full"><label>Próxima acción</label><input type="text" id="m-accion" placeholder="Ej: Llamar para confirmar hora"></div>
+      <div class="fg"><label>Fecha seguimiento</label><input type="date" id="m-fecha"></div>
+      <div class="fg"><label>Próximo control</label><input type="date" id="m-control"></div>
+      <div class="fg"><label>Valor estimado (CLP)</label><input type="number" id="m-valor" placeholder="0"></div>
+      <div class="fg full"><label>Notas</label><textarea id="m-notas" placeholder="Observaciones relevantes…"></textarea></div>
+      <div class="sect-div">Flags Blueprint</div>
+      <div class="toggle-row">
+        <span>Candidato Blueprint</span>
+        <label class="tgl"><input type="checkbox" id="m-cand"><span class="tgl-sl"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span>Blueprint activo</span>
+        <label class="tgl"><input type="checkbox" id="m-act"><span class="tgl-sl"></span></label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveLead()"><i class="ti ti-check"></i> Guardar lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CIERRE PERDIDO -->
+<div class="lost-bg" id="lostBg">
+  <div class="lost-modal">
+    <div class="modal-head">
+      <h2>Cerrar como perdido</h2>
+      <button class="modal-close" onclick="closeLost()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" style="grid-template-columns:1fr;max-height:none">
+      <div class="fg"><label>Motivo de cierre</label>
+        <select id="l-motivo">
+          <option>Precio muy alto</option>
+          <option>Se fue a la competencia</option>
+          <option>Decidió no tratarse</option>
+          <option>No contestó más</option>
+          <option>Tiempo de espera muy largo</option>
+          <option>No le gustó el resultado del tratamiento</option>
+          <option>Impuntualidad</option>
+          <option>Otra razón</option>
+        </select>
+      </div>
+      <div class="fg"><label>Notas adicionales</label><textarea id="l-notas" placeholder="Detalles relevantes…" style="min-height:80px"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeLost()">Cancelar</button>
+      <button class="btn-close-red" onclick="closeLost()"><i class="ti ti-x"></i> Confirmar cierre</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://nirxkzkfcctdigvuapuc.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pcnhremtmY2N0ZGlndnVhcHVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDY5MTUsImV4cCI6MjA5NTEyMjkxNX0.iGTkHTRgdsEDoUsvS9ApQtSRAJV52z-_IASlFBmPqDM';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const ESTADOS = {
+  '1':['Nuevo lead','Contactado','Calificado','Hora ofrecida','Agendado','Confirmado','Asistió','Presupuesto indicado','Tratamiento realizado','Seguimiento','Fidelizado regular','Fidelizado Blueprint','Cerrado perdido'],
+  '2':['Consulta inicial','Evaluación realizada','Plan propuesto','Presupuesto enviado','En decisión','Reservó procedimiento','Procedimiento realizado','Control post','Fidelizado regular','Fidelizado Blueprint','Cerrado perdido'],
+  '3':['Paciente antiguo','Reactivación enviada','Respondió','Hora ofrecida','Agendado','Tratamiento realizado','Mantención programada','Fidelizado regular','Fidelizado Blueprint','Cerrado perdido']
+};
+const ESTADO_BADGE = {
+  'Nuevo lead':'b-nuevo','Contactado':'b-contactado','Calificado':'b-calificado',
+  'Hora ofrecida':'b-hora','Agendado':'b-agendado','Confirmado':'b-confirmado',
+  'Asistió':'b-asistio','Presupuesto indicado':'b-presupuesto','Tratamiento realizado':'b-realizado',
+  'Seguimiento':'b-seguimiento','Fidelizado regular':'b-fid-reg','Fidelizado Blueprint':'b-fid-bp',
+  'Cerrado perdido':'b-perdido','Consulta inicial':'b-nuevo','Evaluación realizada':'b-evaluacion',
+  'Plan propuesto':'b-plan','Presupuesto enviado':'b-enviado','En decisión':'b-decision',
+  'Reservó procedimiento':'b-reservo','Procedimiento realizado':'b-realizado','Control post':'b-control',
+  'Paciente antiguo':'b-antiguo','Reactivación enviada':'b-reactiv','Respondió':'b-respondio',
+  'Mantención programada':'b-mantencion'
+};
+const PIPE_BADGE = {'1':'b-p1','2':'b-p2','3':'b-p3'};
+const ORI_COLOR = {
+  'WhatsApp':'#25D366','Instagram':'#E1306C','Google Ads':'#4285F4','YouTube':'#FF0000',
+  'TikTok':'#000000','LinkedIn':'#0077B5','Google Maps':'#34A853',
+  'dermatologia.cl':'#1a1a18','Referido':'#8B5CF6','Paciente antiguo':'#B45309'
+};
+const AV_COLORS = [
+  ['#e6f1fb','#185fa5'],['#eeedfe','#3c3489'],['#e1f5ee','#0f6e56'],
+  ['#faeeda','#854f0b'],['#fbeaf0','#72243e'],['#eaf3de','#27500a']
+];
+
+let allData = [];
+let activePipe = 'all';
+
+function initials(n,a){
+  const fn = (n||'').trim();
+  const ln = (a||'').trim();
+  return ((fn[0]||'')+(ln[0]||fn[1]||'')).toUpperCase()||'—';
+}
+function fmt(v){return v?'$'+Math.round(v).toLocaleString('es-CL'):'—'}
+function fmtDate(d){if(!d)return'—';const p=d.split('-');return p[2]+'/'+p[1]}
+
+async function loadData(){
+  try {
+    const {data,error} = await sb.from('pipeline_registros')
+      .select(`
+        *,
+        pacientes(id,nombre,apellido,rut,tel,email,origen,tipo_paciente,candidato_blueprint,blueprint_activo,ticket_acumulado,interes_principal,ticket_estimado),
+        pipelines(id,nombre),
+        estados(id,nombre,orden,da_acceso_app)
+      `)
+      .eq('activo',true)
+      .order('created_at',{ascending:false});
+
+    if(error){
+      console.warn('Error Supabase:',error.message);
+      loadDemo();
+      return;
+    }
+    allData = (data||[]).map(r=>({
+      id: r.id,
+      nombre: r.pacientes?.nombre||'',
+      apellido: r.pacientes?.apellido||'',
+      tel: r.pacientes?.tel||'',
+      rut: r.pacientes?.rut||'',
+      origen: r.pacientes?.origen||r.origen||'',
+      tipo: r.pacientes?.tipo_paciente||'Lead',
+      estado: r.estados?.nombre||'',
+      pipeline: String(r.pipeline_id||'1'),
+      resp: r.responsable_id||'',
+      accion: r.proxima_accion||'',
+      fecha: r.fecha_seguimiento||'',
+      valor: r.valor_estimado||0,
+      cand: r.pacientes?.candidato_blueprint||false,
+      act: r.pacientes?.blueprint_activo||false,
+      ticket: r.pacientes?.ticket_acumulado||0,
+    }));
+    renderAll();
+  } catch(e){
+    console.warn('Error conexión:',e);
+    loadDemo();
+  }
+}
+
+function loadDemo(){
+  allData = [
+    {id:'1',nombre:'Valentina',apellido:'Riquelme',tel:'+56 9 8821 3345',rut:'18.234.567-8',origen:'Instagram',tipo:'Lead',estado:'Presupuesto enviado',pipeline:'2',resp:'Caro',accion:'Hacer seguimiento decisión',fecha:'2026-06-09',valor:650000,cand:true,act:false},
+    {id:'2',nombre:'Sofía',apellido:'Errázuriz',tel:'+56 9 6612 9901',rut:'17.123.456-7',origen:'Google Ads',tipo:'Lead',estado:'Contactado',pipeline:'1',resp:'Paz',accion:'Ofrecer hora disponible',fecha:'2026-06-08',valor:90000,cand:false,act:false},
+    {id:'3',nombre:'Carolina',apellido:'Mena',tel:'+56 9 7745 2230',rut:'15.987.654-3',origen:'Referido',tipo:'Blueprint',estado:'Fidelizado Blueprint',pipeline:'2',resp:'Caro',accion:'Agendar control trimestral',fecha:'2026-06-20',valor:290000,cand:true,act:true},
+    {id:'4',nombre:'Isidora',apellido:'Fontaine',tel:'+56 9 5531 8872',rut:'19.876.543-2',origen:'WhatsApp',tipo:'Lead',estado:'Agendado',pipeline:'1',resp:'Paz',accion:'Confirmar hora mañana',fecha:'2026-06-10',valor:90000,cand:false,act:false},
+    {id:'5',nombre:'Javiera',apellido:'Urquiza',tel:'+56 9 9934 1108',rut:'14.765.432-1',origen:'Paciente antiguo',tipo:'Paciente recurrente',estado:'Reactivación enviada',pipeline:'3',resp:'Valentina',accion:'Esperar respuesta 48 hrs',fecha:'2026-06-09',valor:380000,cand:false,act:false},
+    {id:'6',nombre:'Pilar',apellido:'Alvarado',tel:'+56 9 7723 6654',rut:'16.654.321-0',origen:'dermatologia.cl',tipo:'Paciente tratado',estado:'Control post',pipeline:'2',resp:'Paz',accion:'Recordar cita control',fecha:'2026-06-14',valor:520000,cand:true,act:true},
+    {id:'7',nombre:'Magdalena',apellido:'Vial',tel:'+56 9 8812 4490',rut:'20.543.210-9',origen:'Google Maps',tipo:'Lead',estado:'Reservó procedimiento',pipeline:'2',resp:'Caro',accion:'Confirmar pabellón',fecha:'2026-06-12',valor:980000,cand:false,act:false},
+    {id:'8',nombre:'Antonia',apellido:'Herrera',tel:'+56 9 6601 7723',rut:'21.432.109-8',origen:'WhatsApp',tipo:'Lead',estado:'Nuevo lead',pipeline:'1',resp:'Paz',accion:'Responder consulta',fecha:'2026-06-07',valor:90000,cand:false,act:false},
+  ];
+  renderAll();
+}
+
+function renderAll(){
+  updateStats();
+  updateEstadoFilter();
+  applyFilters();
+  document.getElementById('loading').style.display='none';
+  const d = new Date();
+  document.getElementById('page-sub').textContent = d.toLocaleDateString('es-CL',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+function updateStats(){
+  const d = allData;
+  document.getElementById('s-total').textContent = d.length;
+  document.getElementById('s-agendados').textContent = d.filter(r=>r.estado==='Agendado'||r.estado==='Confirmado').length;
+  document.getElementById('s-tratados').textContent = d.filter(r=>['Tratamiento realizado','Procedimiento realizado','Fidelizado regular','Fidelizado Blueprint'].includes(r.estado)).length;
+  const total = d.reduce((s,r)=>s+r.valor,0);
+  document.getElementById('s-valor').textContent = total>0?'$'+Math.round(total/1000000)+'M':'—';
+  document.getElementById('s-bp').textContent = d.filter(r=>r.act).length;
+  const cand = d.filter(r=>r.cand&&!r.act).length;
+  document.getElementById('s-bp-sub').textContent = cand>0?`activos · ${cand} candidato${cand>1?'s':''}`:'activos';
+}
+
+function updateEstadoFilter(){
+  const sel = document.getElementById('f-estado');
+  const estados = activePipe==='all'
+    ? [...new Set(Object.values(ESTADOS).flat())]
+    : ESTADOS[activePipe]||[];
+  sel.innerHTML = '<option value="">Todos los estados</option>'+estados.map(e=>`<option>${e}</option>`).join('');
+}
+
+function applyFilters(){
+  const q = document.getElementById('search').value.toLowerCase();
+  const est = document.getElementById('f-estado').value;
+  const ori = document.getElementById('f-origen').value;
+  const res = document.getElementById('f-resp').value;
+  const bp = document.getElementById('f-bp').value;
+  let rows = allData.filter(r=>{
+    if(activePipe!=='all'&&r.pipeline!==activePipe)return false;
+    if(q&&!(r.nombre+' '+r.apellido).toLowerCase().includes(q)&&!r.tel.includes(q)&&!r.rut.includes(q))return false;
+    if(est&&r.estado!==est)return false;
+    if(ori&&r.origen!==ori)return false;
+    if(res&&r.resp!==res)return false;
+    if(bp==='cand'&&!r.cand)return false;
+    if(bp==='act'&&!r.act)return false;
+    return true;
+  });
+  renderTable(rows);
+}
+
+function renderTable(rows){
+  const tbody = document.getElementById('tbody');
+  if(!rows.length){
+    tbody.innerHTML=`<tr><td colspan="10"><div class="empty"><i class="ti ti-inbox"></i><p>No hay registros que coincidan con los filtros</p></div></td></tr>`;
+    document.getElementById('pag-info').textContent='Sin resultados';
+    return;
+  }
+  const ac = (i)=>AV_COLORS[i%AV_COLORS.length];
+  tbody.innerHTML = rows.map((r,i)=>{
+    const [bg,fg] = ac(i);
+    const bpHtml = r.act
+      ? `<i class="ti ti-circle-check bp-diamond" style="color:#3c3489" title="Blueprint activo"></i>`
+      : r.cand
+        ? `<i class="ti ti-diamond bp-diamond" style="color:#854f0b;opacity:.7" title="Candidato Blueprint"></i>`
+        : `<span style="color:var(--ink4);font-size:11px">—</span>`;
+    const oriColor = ORI_COLOR[r.origen]||'#888780';
+    return `<tr>
+      <td class="col-pac"><div style="display:flex;align-items:center;gap:8px">
+        <div class="pac-av" style="background:${bg};color:${fg}">${initials(r.nombre,r.apellido)}</div>
+        <div style="min-width:0"><span class="pac-name">${r.nombre} ${r.apellido}</span><span class="pac-tel">${r.tel}</span></div>
+      </div></td>
+      <td class="col-pip"><span class="badge ${PIPE_BADGE[r.pipeline]||''}">P${r.pipeline}</span></td>
+      <td class="col-ori"><span class="ori-badge"><span class="ori-dot" style="background:${oriColor}"></span>${r.origen}</span></td>
+      <td class="col-est"><span class="badge ${ESTADO_BADGE[r.estado]||'b-nuevo'}">${r.estado}</span></td>
+      <td class="col-res" style="font-size:11px;color:var(--ink3)">${r.resp}</td>
+      <td class="col-acc" style="font-size:11px;color:var(--ink2)" title="${r.accion}">${r.accion||'—'}</td>
+      <td class="col-fec" style="font-size:11px;color:var(--ink3)">${fmtDate(r.fecha)}</td>
+      <td class="col-val" style="font-size:12px;font-weight:500;color:var(--ink)">${fmt(r.valor)}</td>
+      <td class="col-bp" style="text-align:center">${bpHtml}</td>
+      <td class="col-dot"><button class="dots-btn" onclick="event.stopPropagation();showLost()" title="Opciones"><i class="ti ti-dots-vertical"></i></button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('pag-info').textContent=`Mostrando ${rows.length} de ${allData.length} registros`;
+}
+
+function setPipe(p,el){
+  activePipe=p;
+  document.querySelectorAll('.pipe-tab').forEach(t=>{
+    t.className=t.className.replace(/ act/g,'');
+  });
+  el.classList.add('act');
+  updateEstadoFilter();
+  applyFilters();
+}
+
+function setView(v,el){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  const titles={pacientes:'Pacientes y leads',seguimientos:'Seguimientos pendientes',blueprint:'Pacientes Blueprint',metricas:'Métricas y reportes',config:'Configuración'};
+  document.getElementById('page-title').textContent=titles[v]||v;
+}
+
+function updateEstadosModal(){
+  const p = document.getElementById('m-pipe').value;
+  const sel = document.getElementById('m-estado');
+  sel.innerHTML = (ESTADOS[p]||[]).map(e=>`<option>${e}</option>`).join('');
+}
+
+function openModal(){
+  document.getElementById('modalBg').classList.add('open');
+  updateEstadosModal();
+}
+function closeModal(){document.getElementById('modalBg').classList.remove('open')}
+function showLost(){document.getElementById('lostBg').classList.add('open')}
+function closeLost(){document.getElementById('lostBg').classList.remove('open')}
+
+document.getElementById('modalBg').addEventListener('click',e=>{
+  if(e.target===document.getElementById('modalBg'))closeModal();
+});
+document.getElementById('lostBg').addEventListener('click',e=>{
+  if(e.target===document.getElementById('lostBg'))closeLost();
+});
+
+async function saveLead(){
+  const nombre = document.getElementById('m-nombre').value.trim();
+  const apellido = document.getElementById('m-apellido').value.trim();
+  const tel = document.getElementById('m-tel').value.trim();
+  const rut = document.getElementById('m-rut').value.trim();
+  if(!nombre){alert('El nombre es obligatorio');return}
+
+  try {
+    const {data:pac,error:pe} = await sb.from('pacientes').insert({
+      nombre, apellido, rut: rut||null, tel: tel||null,
+      email: document.getElementById('m-email').value.trim()||null,
+      origen: document.getElementById('m-origen').value,
+      tipo_paciente: document.getElementById('m-tipo').value,
+      interes_principal: document.getElementById('m-interes').value,
+      ticket_estimado: document.getElementById('m-ticket-est').value,
+      candidato_blueprint: document.getElementById('m-cand').checked,
+      blueprint_activo: document.getElementById('m-act').checked,
+      pais: '+56'
+    }).select().single();
+
+    if(pe){console.error(pe);alert('Error al guardar paciente: '+pe.message);return}
+
+    const pipeline_id = parseInt(document.getElementById('m-pipe').value);
+    const estado_nombre = document.getElementById('m-estado').value;
+    const {data:est} = await sb.from('estados').select('id').eq('pipeline_id',pipeline_id).eq('nombre',estado_nombre).single();
+
+    await sb.from('pipeline_registros').insert({
+      paciente_id: pac.id,
+      pipeline_id,
+      estado_id: est?.id||null,
+      proxima_accion: document.getElementById('m-accion').value||null,
+      fecha_seguimiento: document.getElementById('m-fecha').value||null,
+      proximo_control: document.getElementById('m-control').value||null,
+      valor_estimado: parseInt(document.getElementById('m-valor').value)||0,
+      notas: document.getElementById('m-notas').value||null,
+      activo: true
+    });
+
+    closeModal();
+    await loadData();
+  } catch(e){
+    console.warn('Modo demo — guardado simulado');
+    closeModal();
+    alert('Lead guardado (modo demo — sin conexión a Supabase)');
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
