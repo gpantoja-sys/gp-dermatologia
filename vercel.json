@@ -1,0 +1,13 @@
+{
+  "crons": [
+    {
+      "path": "/api/whaticket-sync",
+      "schedule": "*/15 * * * *"
+    }
+  ],
+  "rewrites": [
+    { "source": "/crm", "destination": "/crm.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/manual", "destination": "/manual-crm.html" }
+  ]
+}
