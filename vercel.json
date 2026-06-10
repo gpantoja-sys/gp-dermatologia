@@ -3,6 +3,10 @@
     {
       "path": "/api/whaticket-sync",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/medilink-sync",
+      "schedule": "*/30 * * * *"
     }
   ],
   "rewrites": [
