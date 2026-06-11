@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — GP Dermatología</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --ink: #1a1a18;
+  --ink2: #3d3d3a;
+  --ink3: #888780;
+  --ink4: #c8c6be;
+  --paper: #f8f7f4;
+  --white: #ffffff;
+  --border: rgba(26,26,24,.08);
+  --green: #0f6e56;
+  --green-l: #e1f5ee;
+  --purple: #3c3489;
+  --purple-l: #eeedfe;
+  --amber: #854f0b;
+  --amber-l: #faeeda;
+  --red: #a32d2d;
+  --red-l: #fcebeb;
+  --blue: #185fa5;
+  --blue-l: #e6f1fb;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh}
+
+/* HEADER */
+header{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.h-left{display:flex;align-items:center;gap:16px}
+.h-logo{font-family:'Cormorant',serif;font-size:22px;font-weight:400;letter-spacing:.15em;color:var(--ink)}
+.h-divider{width:1px;height:20px;background:var(--border)}
+.h-title{font-family:'Cormorant',serif;font-size:18px;font-weight:400;color:var(--ink);letter-spacing:.03em}
+.h-right{display:flex;align-items:center;gap:12px}
+.period-tabs{display:flex;gap:2px;background:var(--paper);border-radius:8px;padding:3px}
+.period-tab{padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;border:none;background:transparent;color:var(--ink3);transition:.15s;font-family:'DM Sans',sans-serif}
+.period-tab.act{background:var(--white);color:var(--ink);font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.h-user{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border:1px solid var(--border);border-radius:20px}
+.h-av{width:26px;height:26px;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--white);font-family:'Cormorant',serif;letter-spacing:.05em}
+.h-name{font-size:12px;color:var(--ink)}
+.back-btn{font-size:12px;color:var(--ink3);text-decoration:none;display:flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;transition:.15s}
+.back-btn:hover{color:var(--ink);background:var(--paper)}
+
+/* MAIN */
+main{max-width:1200px;margin:0 auto;padding:28px 32px}
+
+/* FECHA */
+.date-banner{display:flex;align-items:baseline;gap:10px;margin-bottom:24px}
+.date-main{font-family:'Cormorant',serif;font-size:28px;font-weight:300;color:var(--ink)}
+.date-sub{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:28px}
+.kpi{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden}
+.kpi-label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+.kpi-value{font-family:'Cormorant',serif;font-size:36px;font-weight:300;color:var(--ink);line-height:1}
+.kpi-sub{font-size:10px;color:var(--ink4);margin-top:5px}
+.kpi-delta{font-size:10px;font-weight:500;margin-top:4px}
+.kpi-delta.up{color:var(--green)}
+.kpi-delta.dn{color:var(--red)}
+.kpi-bar{position:absolute;bottom:0;left:0;height:3px;border-radius:0 3px 0 0}
+
+/* GRID 2 COL */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+
+/* CARD */
+.card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px 22px}
+.card-title{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.card-title span{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink4);letter-spacing:.05em;text-transform:none}
+
+/* FUNNEL */
+.funnel{display:flex;flex-direction:column;gap:6px}
+.funnel-row{display:flex;align-items:center;gap:10px}
+.funnel-label{font-size:11px;color:var(--ink2);width:140px;flex-shrink:0}
+.funnel-bar-wrap{flex:1;height:8px;background:var(--paper);border-radius:4px;overflow:hidden}
+.funnel-bar{height:100%;border-radius:4px;transition:width .6s ease}
+.funnel-num{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink3);width:30px;text-align:right;flex-shrink:0}
+.funnel-pct{font-size:10px;color:var(--ink4);width:36px;text-align:right;flex-shrink:0}
+
+/* ORÍGENES */
+.origenes{display:flex;flex-direction:column;gap:8px}
+.origen-row{display:flex;align-items:center;gap:10px}
+.origen-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.origen-name{font-size:12px;color:var(--ink2);flex:1}
+.origen-bar-wrap{width:100px;height:6px;background:var(--paper);border-radius:3px;overflow:hidden}
+.origen-bar{height:100%;border-radius:3px}
+.origen-num{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink3);width:24px;text-align:right}
+
+/* PÉRDIDAS */
+.perdidas{display:flex;flex-direction:column;gap:6px}
+.perdida-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:var(--paper)}
+.perdida-icon{font-size:14px;flex-shrink:0}
+.perdida-txt{font-size:11px;color:var(--ink2);flex:1}
+.perdida-num{font-family:'DM Mono',monospace;font-size:11px;color:var(--red);font-weight:500}
+
+/* SEGUIMIENTOS */
+.seguimientos{display:flex;flex-direction:column;gap:6px}
+.seg-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:.1s}
+.seg-row:hover{background:var(--paper)}
+.seg-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0;font-family:'Cormorant',serif}
+.seg-name{font-size:12px;font-weight:500;color:var(--ink);flex:1}
+.seg-accion{font-size:10px;color:var(--ink3)}
+.seg-fecha{font-size:10px;color:var(--ink4);flex-shrink:0}
+.seg-badge{font-size:9px;font-weight:500;padding:2px 7px;border-radius:10px;flex-shrink:0}
+
+/* BLUEPRINT */
+.bp-list{display:flex;flex-direction:column;gap:6px}
+.bp-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--purple-l);border:1px solid rgba(60,52,137,.1)}
+.bp-av{width:28px;height:28px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--white);font-family:'Cormorant',serif;flex-shrink:0}
+.bp-name{font-size:12px;font-weight:500;color:var(--purple);flex:1}
+.bp-ticket{font-family:'DM Mono',monospace;font-size:11px;color:var(--purple)}
+.bp-estado{font-size:9px;font-weight:500;padding:2px 8px;border-radius:10px}
+.bp-cand{background:var(--amber-l);color:var(--amber)}
+.bp-act{background:var(--purple);color:var(--white)}
+
+/* VALOR */
+.valor-box{text-align:center;padding:20px 0}
+.valor-num{font-family:'Cormorant',serif;font-size:52px;font-weight:300;color:var(--ink);line-height:1}
+.valor-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-top:6px}
+.valor-desglose{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px}
+.valor-item{text-align:center;padding:10px;background:var(--paper);border-radius:8px}
+.valor-item-num{font-family:'Cormorant',serif;font-size:22px;font-weight:400;color:var(--ink)}
+.valor-item-lbl{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-top:2px}
+
+/* COMPARATIVO */
+.compare-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:28px}
+.kpi-compare{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden}
+.kpi-c-label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+.kpi-c-row{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-bottom:6px}
+.kpi-c-current{font-family:'Cormorant',serif;font-size:32px;font-weight:300;color:var(--ink);line-height:1}
+.kpi-c-prev{font-family:'Cormorant',serif;font-size:20px;font-weight:300;color:var(--ink4);line-height:1}
+.kpi-c-delta{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:10px}
+.delta-up{background:var(--green-l);color:var(--green)}
+.delta-dn{background:var(--red-l);color:var(--red)}
+.delta-eq{background:var(--paper);color:var(--ink3)}
+.kpi-c-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--ink4);letter-spacing:.06em;text-transform:uppercase}
+.compare-banner{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.compare-banner-title{font-family:'Cormorant',serif;font-size:16px;font-weight:400;color:var(--ink)}
+.compare-banner-sub{font-size:11px;color:var(--ink3);margin-top:1px}
+.compare-pill{font-size:10px;font-weight:500;padding:3px 10px;border-radius:10px;margin-left:auto}
+
+/* TICKET SEGMENTOS */
+.seg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:8px}
+.seg-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+.seg-card-label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;font-weight:500}
+.seg-card-count{font-family:"Cormorant",serif;font-size:32px;font-weight:300;color:var(--ink);line-height:1}
+.seg-card-pct{font-size:11px;margin-top:3px}
+.seg-card-valor{font-size:11px;margin-top:6px;font-weight:500}
+.seg-card-bar{position:absolute;bottom:0;left:0;height:3px;border-radius:0 3px 0 0;transition:width .6s ease}
+
+/* LOADING */
+#loading{position:fixed;inset:0;background:var(--white);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:12px}
+.l-logo{font-family:'Cormorant',serif;font-size:28px;font-weight:300;letter-spacing:.2em;color:var(--ink)}
+.l-sub{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink3)}
+.l-bar{width:80px;height:1px;background:var(--border);margin-top:8px;overflow:hidden}
+.l-fill{height:100%;background:var(--ink);animation:ld 1.2s ease infinite}
+@keyframes ld{0%{width:0;margin-left:0}50%{width:100%}100%{width:0;margin-left:100%}}
+
+.empty-state{text-align:center;padding:32px;color:var(--ink3);font-size:12px}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="l-logo">GP</div>
+  <div class="l-sub">Dashboard · Cargando</div>
+  <div class="l-bar"><div class="l-fill"></div></div>
+</div>
+
+<header>
+  <div class="h-left">
+    <div class="h-logo">GP</div>
+    <div class="h-divider"></div>
+    <div class="h-title">Dashboard ejecutivo</div>
+  </div>
+  <div class="h-right">
+    <div class="period-tabs">
+      <button class="period-tab act" onclick="setPeriod('week',this)">Esta semana</button>
+      <button class="period-tab" onclick="setPeriod('month',this)">Este mes</button>
+      <button class="period-tab" onclick="setPeriod('compare',this)">vs Mes anterior</button>
+      <button class="period-tab" onclick="setPeriod('all',this)">Total</button>
+    </div>
+    <a href="/crm.html" class="back-btn">← CRM</a>
+    <div class="h-user"><div class="h-av">GP</div><span class="h-name">Dr. Pantoja</span></div>
+  </div>
+</header>
+
+<main>
+  <div class="date-banner">
+    <div class="date-main" id="fecha-main">Semana actual</div>
+    <div class="date-sub" id="fecha-sub"></div>
+  </div>
+
+  <!-- SECCIÓN COMPARATIVO -->
+  <div id="compare-section" style="display:none"></div>
+
+  <!-- SECCIÓN NORMAL -->
+  <div id="normal-section">
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-label">Leads recibidos</div>
+      <div class="kpi-value" id="k-leads">—</div>
+      <div class="kpi-sub">nuevos contactos</div>
+      <div class="kpi-bar" style="background:var(--blue);width:100%"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Agendados</div>
+      <div class="kpi-value" id="k-agendados">—</div>
+      <div class="kpi-sub">con hora confirmada</div>
+      <div class="kpi-bar" style="background:var(--green);width:70%"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Tratados</div>
+      <div class="kpi-value" id="k-tratados">—</div>
+      <div class="kpi-sub">procedimientos realizados</div>
+      <div class="kpi-bar" style="background:var(--green);width:50%"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Tasa conversión</div>
+      <div class="kpi-value" id="k-tasa">—</div>
+      <div class="kpi-sub">lead → tratamiento</div>
+      <div class="kpi-bar" style="background:var(--purple);width:40%"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Perdidos</div>
+      <div class="kpi-value" id="k-perdidos">—</div>
+      <div class="kpi-sub">cierres registrados</div>
+      <div class="kpi-bar" style="background:var(--red);width:20%"></div>
+    </div>
+  </div>
+
+  </div><!-- /normal-section -->
+
+  <div class="grid2">
+    <!-- FUNNEL -->
+    <div class="card">
+      <div class="card-title">Funnel de conversión <span id="funnel-period">esta semana</span></div>
+      <div class="funnel" id="funnel-container">
+        <div class="empty-state">Cargando…</div>
+      </div>
+    </div>
+
+    <!-- VALOR PIPELINE -->
+    <div class="card">
+      <div class="card-title">Valor del pipeline</div>
+      <div class="valor-box">
+        <div class="valor-num" id="v-total">—</div>
+        <div class="valor-label">valor estimado total</div>
+        <div class="valor-desglose">
+          <div class="valor-item">
+            <div class="valor-item-num" id="v-p1">—</div>
+            <div class="valor-item-lbl">P1 Consulta</div>
+          </div>
+          <div class="valor-item">
+            <div class="valor-item-num" id="v-p2">—</div>
+            <div class="valor-item-lbl">P2 Premium</div>
+          </div>
+          <div class="valor-item">
+            <div class="valor-item-num" id="v-p3">—</div>
+            <div class="valor-item-lbl">P3 Reactiv.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEGMENTOS DE TICKET -->
+  <div id="normal-ticket" style="display:none;margin-bottom:16px">
+    <div class="card">
+      <div class="card-title">Distribución por ticket estimado <span id="ticket-period"></span></div>
+      <div class="seg-grid" id="seg-ticket-grid"></div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+        Bajo &lt;$150K · Medio $150K–$450K · Alto $450K–$1.5M · Premium &gt;$1.5M
+      </div>
+    </div>
+  </div>
+
+  <div class="grid3">
+    <!-- ORÍGENES -->
+    <div class="card">
+      <div class="card-title">Orígenes de leads</div>
+      <div class="origenes" id="origenes-container">
+        <div class="empty-state">Cargando…</div>
+      </div>
+    </div>
+
+    <!-- RAZONES DE PÉRDIDA -->
+    <div class="card">
+      <div class="card-title">Razones de pérdida</div>
+      <div class="perdidas" id="perdidas-container">
+        <div class="empty-state">Sin cierres registrados</div>
+      </div>
+    </div>
+
+    <!-- BLUEPRINT -->
+    <div class="card">
+      <div class="card-title">Blueprint</div>
+      <div class="bp-list" id="bp-container">
+        <div class="empty-state">Sin candidatos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEGUIMIENTOS PENDIENTES HOY -->
+  <div class="card">
+    <div class="card-title">Seguimientos pendientes hoy <span id="seg-count"></span></div>
+    <div class="seguimientos" id="seg-container">
+      <div class="empty-state">Sin seguimientos pendientes para hoy</div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const SUPABASE_URL = 'https://nirxkzkfcctdigvuapuc.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pcnhremtmY2N0ZGlndnVhcHVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDY5MTUsImV4cCI6MjA5NTEyMjkxNX0.iGTkHTRgdsEDoUsvS9ApQtSRAJV52z-_IASlFBmPqDM';
+
+let sb;
+
+const ORI_COLORS = {
+  'WhatsApp':'#25D366','Instagram':'#E1306C','Google Ads':'#4285F4',
+  'YouTube':'#FF0000','TikTok':'#000000','LinkedIn':'#0077B5',
+  'Google Maps':'#34A853','dermatologia.cl':'#1a1a18',
+  'Referido':'#8B5CF6','Paciente antiguo':'#B45309'
+};
+const PERDIDA_ICONS = {
+  'Precio muy alto':'💰','Se fue a la competencia':'🏃',
+  'Decidió no tratarse':'🤔','No contestó más':'📵',
+  'Tiempo de espera muy largo':'⏰','No le gustó el resultado del tratamiento':'😔',
+  'Impuntualidad':'🕐','Otra razón':'📝'
+};
+const AV_COLORS = [
+  ['#e6f1fb','#185fa5'],['#eeedfe','#3c3489'],['#e1f5ee','#0f6e56'],
+  ['#faeeda','#854f0b'],['#fbeaf0','#72243e']
+];
+
+let period = 'week';
+let allData = [];
+let cierresData = [];
+let prevData = [];
+let prevCierres = [];
+
+function getDateRange(p) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (p === 'week') {
+    const day = today.getDay() || 7;
+    const mon = new Date(today); mon.setDate(today.getDate() - day + 1);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    sun.setHours(23,59,59,999);
+    return { from: mon.toISOString(), to: sun.toISOString() };
+  }
+  if (p === 'month') {
+    const from = new Date(today.getFullYear(), today.getMonth(), 1);
+    const to = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    to.setHours(23,59,59,999);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  if (p === 'compare') {
+    const curFrom = new Date(today.getFullYear(), today.getMonth(), 1);
+    const curTo = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    curTo.setHours(23,59,59,999);
+    const prevFrom = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const prevTo = new Date(today.getFullYear(), today.getMonth(), 0);
+    prevTo.setHours(23,59,59,999);
+    return {
+      from: curFrom.toISOString(), to: curTo.toISOString(),
+      prevFrom: prevFrom.toISOString(), prevTo: prevTo.toISOString()
+    };
+  }
+  // all
+  return { from: '2020-01-01T00:00:00.000Z', to: '2099-01-01T00:00:00.000Z' };
+}
+
+function getPrevMonthName() {
+  const d = new Date(); d.setMonth(d.getMonth() - 1);
+  return d.toLocaleDateString('es-CL', {month:'long', year:'numeric'});
+}
+function getCurMonthName() {
+  return new Date().toLocaleDateString('es-CL', {month:'long', year:'numeric'});
+}
+
+function deltaHtml(cur, prev) {
+  if (prev === 0) return cur > 0
+    ? `<span class="kpi-c-delta delta-up">↑ Nuevo</span>`
+    : `<span class="kpi-c-delta delta-eq">—</span>`;
+  const pct = Math.round(((cur - prev) / prev) * 100);
+  if (pct > 0) return `<span class="kpi-c-delta delta-up">↑ ${pct}%</span>`;
+  if (pct < 0) return `<span class="kpi-c-delta delta-dn">↓ ${Math.abs(pct)}%</span>`;
+  return `<span class="kpi-c-delta delta-eq">= Sin cambio</span>`;
+}
+
+function fmt(v) {
+  if (!v) return '—';
+  if (v >= 1000000) return '$' + (v/1000000).toFixed(1) + 'M';
+  if (v >= 1000) return '$' + Math.round(v/1000) + 'K';
+  return '$' + v.toLocaleString('es-CL');
+}
+function initials(n, a) {
+  return ((n||'')[0]||'').toUpperCase() + ((a||'')[0]||'').toUpperCase() || '—';
+}
+
+function hideLoading() {
+  const el = document.getElementById('loading');
+  if (el) el.style.display = 'none';
+}
+
+async function loadData() {
+  // Inicializar cliente si no existe aún
+  if (!sb) {
+    try {
+      sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } catch(e) {
+      console.warn('No se pudo inicializar Supabase:', e.message);
+      loadDemo();
+      return;
+    }
+  }
+
+  const range = getDateRange(period);
+
+  try {
+    const { data, error } = await sb
+      .from('pipeline_registros')
+      .select('*, pacientes(nombre,apellido,origen,candidato_blueprint,blueprint_activo,ticket_acumulado), estados(nombre,da_acceso_app,es_final_negativo)')
+      .gte('created_at', range.from)
+      .lte('created_at', range.to)
+      .limit(50000);
+
+    if (error) throw error;
+    allData = data || [];
+
+    const { data: cierres } = await sb
+      .from('cierres_perdidos')
+      .select('motivo, created_at')
+      .gte('created_at', range.from)
+      .lte('created_at', range.to)
+      .limit(50000);
+    cierresData = cierres || [];
+
+    if (period === 'compare' && range.prevFrom) {
+      const { data: prev } = await sb
+        .from('pipeline_registros')
+        .select('*, pacientes(nombre,apellido,origen,candidato_blueprint,blueprint_activo,ticket_acumulado), estados(nombre,da_acceso_app,es_final_negativo)')
+        .gte('created_at', range.prevFrom)
+        .lte('created_at', range.prevTo)
+        .limit(50000);
+      prevData = prev || [];
+
+      const { data: prevC } = await sb
+        .from('cierres_perdidos')
+        .select('motivo, created_at')
+        .gte('created_at', range.prevFrom)
+        .lte('created_at', range.prevTo)
+        .limit(50000);
+      prevCierres = prevC || [];
+    } else {
+      prevData = [];
+      prevCierres = [];
+    }
+
+  } catch(e) {
+    console.warn('Error Supabase, usando datos demo:', e.message);
+    loadDemo();
+    return;
+  }
+
+  render();
+}
+
+function loadDemo() {
+  allData = [
+    {id:'1',pipeline_id:2,valor_estimado:650000,created_at:new Date().toISOString(),fecha_seguimiento:new Date().toISOString().split('T')[0],proxima_accion:'Hacer seguimiento decisión',responsable:'Clarita',pacientes:{nombre:'Valentina',apellido:'Riquelme',origen:'Instagram',candidato_blueprint:true,blueprint_activo:false,ticket_acumulado:650000},estados:{nombre:'Presupuesto enviado',da_acceso_app:false,es_final_negativo:false}},
+    {id:'2',pipeline_id:1,valor_estimado:90000,created_at:new Date().toISOString(),fecha_seguimiento:new Date().toISOString().split('T')[0],proxima_accion:'Ofrecer hora disponible',responsable:'Clarita',pacientes:{nombre:'Sofía',apellido:'Errázuriz',origen:'Google Ads',candidato_blueprint:false,blueprint_activo:false,ticket_acumulado:0},estados:{nombre:'Contactado',da_acceso_app:false,es_final_negativo:false}},
+    {id:'3',pipeline_id:2,valor_estimado:290000,created_at:new Date().toISOString(),fecha_seguimiento:'2099-01-01',proxima_accion:'Agendar control trimestral',responsable:'Clarita',pacientes:{nombre:'Carolina',apellido:'Mena',origen:'Referido',candidato_blueprint:true,blueprint_activo:true,ticket_acumulado:4200000},estados:{nombre:'Fidelizado Blueprint',da_acceso_app:true,es_final_negativo:false}},
+    {id:'4',pipeline_id:1,valor_estimado:90000,created_at:new Date().toISOString(),fecha_seguimiento:new Date().toISOString().split('T')[0],proxima_accion:'Confirmar hora mañana',responsable:'Clarita',pacientes:{nombre:'Isidora',apellido:'Fontaine',origen:'WhatsApp',candidato_blueprint:false,blueprint_activo:false,ticket_acumulado:0},estados:{nombre:'Agendado',da_acceso_app:false,es_final_negativo:false}},
+    {id:'5',pipeline_id:3,valor_estimado:380000,created_at:new Date().toISOString(),fecha_seguimiento:new Date().toISOString().split('T')[0],proxima_accion:'Esperar respuesta 48 hrs',responsable:'Andrea',pacientes:{nombre:'Javiera',apellido:'Urquiza',origen:'Paciente antiguo',candidato_blueprint:false,blueprint_activo:false,ticket_acumulado:890000},estados:{nombre:'Reactivación enviada',da_acceso_app:false,es_final_negativo:false}},
+    {id:'6',pipeline_id:2,valor_estimado:520000,created_at:new Date().toISOString(),fecha_seguimiento:'2099-01-01',proxima_accion:'Recordar cita control',responsable:'Clarita',pacientes:{nombre:'Pilar',apellido:'Alvarado',origen:'dermatologia.cl',candidato_blueprint:true,blueprint_activo:true,ticket_acumulado:5100000},estados:{nombre:'Control post',da_acceso_app:true,es_final_negativo:false}},
+    {id:'7',pipeline_id:2,valor_estimado:980000,created_at:new Date().toISOString(),fecha_seguimiento:new Date().toISOString().split('T')[0],proxima_accion:'Confirmar pabellón',responsable:'Clarita',pacientes:{nombre:'Magdalena',apellido:'Vial',origen:'Google Maps',candidato_blueprint:false,blueprint_activo:false,ticket_acumulado:980000},estados:{nombre:'Reservó procedimiento',da_acceso_app:false,es_final_negativo:false}},
+    {id:'8',pipeline_id:1,valor_estimado:90000,created_at:new Date().toISOString(),fecha_seguimiento:new Date().toISOString().split('T')[0],proxima_accion:'Responder consulta inicial',responsable:'Clarita',pacientes:{nombre:'Antonia',apellido:'Herrera',origen:'WhatsApp',candidato_blueprint:false,blueprint_activo:false,ticket_acumulado:0},estados:{nombre:'Nuevo lead',da_acceso_app:false,es_final_negativo:false}},
+  ];
+  cierresData = [
+    {motivo:'Precio muy alto',created_at:new Date().toISOString()},
+    {motivo:'No contestó más',created_at:new Date().toISOString()},
+    {motivo:'Precio muy alto',created_at:new Date().toISOString()},
+  ];
+  render();
+}
+
+function render() {
+  // Siempre ocultar loading al inicio de render
+  hideLoading();
+  updateFecha();
+
+  if (period === 'compare') {
+    renderCompare();
+  } else {
+    document.getElementById('compare-section').style.display = 'none';
+    document.getElementById('normal-section').style.display = 'block';
+    renderKPIs();
+    renderFunnel();
+    renderValor();
+  }
+
+  renderTicketSegmentos();
+  renderOrigenes();
+  renderPerdidas();
+  renderBlueprint();
+  renderSeguimientos();
+}
+
+function updateFecha() {
+  const now = new Date();
+  const range = getDateRange(period);
+  if (period === 'week') {
+    const from = new Date(range.from);
+    const to = new Date(range.to);
+    document.getElementById('fecha-main').textContent =
+      `${from.getDate()} — ${to.getDate()} de ${to.toLocaleDateString('es-CL',{month:'long',year:'numeric'})}`;
+    document.getElementById('fecha-sub').textContent = 'Semana en curso';
+  } else if (period === 'month') {
+    document.getElementById('fecha-main').textContent =
+      now.toLocaleDateString('es-CL',{month:'long',year:'numeric'});
+    document.getElementById('fecha-sub').textContent = 'Mes en curso';
+  } else if (period === 'compare') {
+    document.getElementById('fecha-main').textContent = getCurMonthName();
+    document.getElementById('fecha-sub').textContent = 'vs ' + getPrevMonthName();
+  } else {
+    document.getElementById('fecha-main').textContent = 'Histórico completo';
+    document.getElementById('fecha-sub').textContent = 'Todos los registros';
+  }
+}
+
+function renderKPIs() {
+  const total = allData.length;
+  const agendados = allData.filter(r =>
+    ['Agendado','Confirmado'].includes(r.estados?.nombre)).length;
+  const tratados = allData.filter(r => r.estados?.da_acceso_app).length;
+  const perdidos = allData.filter(r => r.estados?.es_final_negativo).length;
+  const tasa = total > 0 ? Math.round((tratados / total) * 100) : 0;
+  document.getElementById('k-leads').textContent = total;
+  document.getElementById('k-agendados').textContent = agendados;
+  document.getElementById('k-tratados').textContent = tratados;
+  document.getElementById('k-tasa').textContent = tasa + '%';
+  document.getElementById('k-perdidos').textContent = perdidos;
+}
+
+function renderFunnel() {
+  const etapas = [
+    {nombre:'Nuevo lead / Contactado', keys:['Nuevo lead','Contactado','Calificado','Paciente antiguo','Reactivación enviada']},
+    {nombre:'Hora ofrecida / Agendado', keys:['Hora ofrecida','Agendado','Confirmado','Respondió','Reservó procedimiento']},
+    {nombre:'Asistió / Evaluación',     keys:['Asistió','Evaluación realizada','Plan propuesto','Consulta inicial']},
+    {nombre:'Presupuesto enviado',       keys:['Presupuesto indicado','Presupuesto enviado','En decisión']},
+    {nombre:'Tratamiento realizado',     keys:['Tratamiento realizado','Procedimiento realizado']},
+    {nombre:'Fidelizado',                keys:['Fidelizado regular','Fidelizado Blueprint','Seguimiento','Control post','Mantención programada']},
+  ];
+  const colors = ['#378ADD','#5DCAA5','#1D9E75','#EF9F27','#0F6E56','#3C3489'];
+  const counts = etapas.map(e => ({
+    nombre: e.nombre,
+    count: allData.filter(r => e.keys.includes(r.estados?.nombre)).length
+  }));
+  const max = Math.max(...counts.map(c => c.count), 1);
+  const container = document.getElementById('funnel-container');
+  if (!allData.length) {
+    container.innerHTML = '<div class="empty-state">Sin datos en este período</div>';
+    return;
+  }
+  container.innerHTML = counts.map((c, i) => `
+    <div class="funnel-row">
+      <div class="funnel-label">${c.nombre}</div>
+      <div class="funnel-bar-wrap">
+        <div class="funnel-bar" style="width:${(c.count/max*100).toFixed(1)}%;background:${colors[i]}"></div>
+      </div>
+      <div class="funnel-num">${c.count}</div>
+      <div class="funnel-pct">${allData.length > 0 ? Math.round(c.count/allData.length*100) + '%' : '-'}</div>
+    </div>
+  `).join('');
+  document.getElementById('funnel-period').textContent =
+    period === 'week' ? 'esta semana' : period === 'month' ? 'este mes' : period === 'compare' ? 'este mes' : 'histórico';
+}
+
+function renderValor() {
+  const total = allData.reduce((s,r) => s + (r.valor_estimado||0), 0);
+  const p1 = allData.filter(r=>r.pipeline_id===1).reduce((s,r)=>s+(r.valor_estimado||0),0);
+  const p2 = allData.filter(r=>r.pipeline_id===2).reduce((s,r)=>s+(r.valor_estimado||0),0);
+  const p3 = allData.filter(r=>r.pipeline_id===3).reduce((s,r)=>s+(r.valor_estimado||0),0);
+  document.getElementById('v-total').textContent = fmt(total);
+  document.getElementById('v-p1').textContent = fmt(p1);
+  document.getElementById('v-p2').textContent = fmt(p2);
+  document.getElementById('v-p3').textContent = fmt(p3);
+}
+
+function renderTicketSegmentos() {
+  const segmentos = [
+    {key:'Bajo',    min:0,       max:149999,  color:'var(--blue)',   label:'Bajo',    rango:'< $150K'},
+    {key:'Medio',   min:150000,  max:449999,  color:'var(--green)',  label:'Medio',   rango:'$150K — $450K'},
+    {key:'Alto',    min:450000,  max:1499999, color:'var(--amber)',  label:'Alto',    rango:'$450K — $1.5M'},
+    {key:'Premium', min:1500000, max:Infinity,color:'var(--purple)', label:'Premium', rango:'> $1.5M'},
+  ];
+  const counts = {Bajo:0,Medio:0,Alto:0,Premium:0};
+  const valores = {Bajo:0,Medio:0,Alto:0,Premium:0};
+
+  allData.forEach(r => {
+    const v = r.valor_estimado || 0;
+    if (v <= 0) return;
+    const cat = v < 150000 ? 'Bajo' : v < 450000 ? 'Medio' : v < 1500000 ? 'Alto' : 'Premium';
+    counts[cat]++;
+    valores[cat] += v;
+  });
+
+  const total = Object.values(counts).reduce((s,v) => s+v, 0);
+  const maxCount = Math.max(...Object.values(counts), 1);
+  const container = document.getElementById('seg-ticket-grid');
+
+  container.innerHTML = segmentos.map(seg => {
+    const count = counts[seg.key];
+    const valor = valores[seg.key];
+    const pct = total > 0 ? Math.round(count/total*100) : 0;
+    const barW = Math.round(count/maxCount*100);
+    return `<div class="seg-card" style="border-top:2px solid ${seg.color}">
+      <div class="seg-card-label" style="color:${seg.color}">${seg.label}</div>
+      <div class="seg-card-count">${count}</div>
+      <div class="seg-card-pct" style="color:${seg.color}">${pct}% del total</div>
+      <div class="seg-card-valor" style="color:var(--ink2)">${fmt(valor)}</div>
+      <div style="font-size:9px;color:var(--ink4);margin-top:2px">${seg.rango}</div>
+      <div class="seg-card-bar" style="width:${barW}%;background:${seg.color}"></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('ticket-period').textContent =
+    period === 'week' ? 'esta semana' : period === 'month' ? 'este mes' : period === 'compare' ? 'este mes' : 'histórico';
+  document.getElementById('normal-ticket').style.display = 'block';
+}
+
+function renderCompare() {
+  document.getElementById('normal-section').style.display = 'none';
+  document.getElementById('compare-section').style.display = 'block';
+
+  const metrics = [
+    {label:'Leads recibidos',   cur:allData.length, prev:prevData.length},
+    {label:'Agendados',         cur:allData.filter(r=>['Agendado','Confirmado'].includes(r.estados?.nombre)).length, prev:prevData.filter(r=>['Agendado','Confirmado'].includes(r.estados?.nombre)).length},
+    {label:'Tratados',          cur:allData.filter(r=>r.estados?.da_acceso_app).length, prev:prevData.filter(r=>r.estados?.da_acceso_app).length},
+    {label:'Tasa conversión',   cur:allData.length?Math.round(allData.filter(r=>r.estados?.da_acceso_app).length/allData.length*100):0, prev:prevData.length?Math.round(prevData.filter(r=>r.estados?.da_acceso_app).length/prevData.length*100):0, suffix:'%'},
+    {label:'Perdidos',          cur:cierresData.length, prev:prevCierres.length},
+  ];
+  const colors = ['var(--blue)','var(--green)','var(--green)','var(--purple)','var(--red)'];
+
+  document.getElementById('compare-section').innerHTML = `
+    <div class="compare-banner">
+      <div>
+        <div class="compare-banner-title">Comparativo mensual</div>
+        <div class="compare-banner-sub">${getCurMonthName()} vs ${getPrevMonthName()}</div>
+      </div>
+      <span class="compare-pill" style="background:var(--green-l);color:var(--green)">Mes actual</span>
+      <span class="compare-pill" style="background:var(--paper);color:var(--ink3);margin-left:4px">Mes anterior</span>
+    </div>
+    <div class="compare-grid">
+      ${metrics.map((m,i) => `
+        <div class="kpi-compare">
+          <div class="kpi-c-label">${m.label}</div>
+          <div class="kpi-c-row">
+            <div class="kpi-c-current">${m.cur}${m.suffix||''}</div>
+            <div class="kpi-c-prev">${m.prev}${m.suffix||''}</div>
+          </div>
+          ${deltaHtml(m.cur, m.prev)}
+          <div class="kpi-c-labels" style="margin-top:6px">
+            <span>Este mes</span><span>Mes anterior</span>
+          </div>
+          <div style="position:absolute;bottom:0;left:0;height:3px;background:${colors[i]};width:${m.cur>0?Math.min(m.cur/(Math.max(m.prev,m.cur)||1)*100,100):0}%;border-radius:0 3px 0 0"></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderOrigenes() {
+  const counts = {};
+  allData.forEach(r => {
+    const o = r.pacientes?.origen || 'Desconocido';
+    counts[o] = (counts[o]||0) + 1;
+  });
+  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+  const max = sorted[0]?.[1] || 1;
+  const container = document.getElementById('origenes-container');
+  if (!sorted.length) {
+    container.innerHTML = '<div class="empty-state">Sin datos</div>';
+    return;
+  }
+  container.innerHTML = sorted.map(([name, count]) => `
+    <div class="origen-row">
+      <div class="origen-dot" style="background:${ORI_COLORS[name]||'#888780'}"></div>
+      <div class="origen-name">${name}</div>
+      <div class="origen-bar-wrap">
+        <div class="origen-bar" style="width:${count/max*100}%;background:${ORI_COLORS[name]||'#888780'}"></div>
+      </div>
+      <div class="origen-num">${count}</div>
+    </div>
+  `).join('');
+}
+
+function renderPerdidas() {
+  const counts = {};
+  cierresData.forEach(c => { counts[c.motivo] = (counts[c.motivo]||0) + 1; });
+  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+  const container = document.getElementById('perdidas-container');
+  if (!sorted.length) {
+    container.innerHTML = '<div class="empty-state">Sin cierres registrados</div>';
+    return;
+  }
+  container.innerHTML = sorted.map(([motivo, count]) => `
+    <div class="perdida-row">
+      <div class="perdida-icon">${PERDIDA_ICONS[motivo]||'📝'}</div>
+      <div class="perdida-txt">${motivo}</div>
+      <div class="perdida-num">${count}</div>
+    </div>
+  `).join('');
+}
+
+function renderBlueprint() {
+  const bps = allData
+    .filter(r => r.pacientes?.candidato_blueprint || r.pacientes?.blueprint_activo)
+    .sort((a,b) => (b.pacientes?.ticket_acumulado||0) - (a.pacientes?.ticket_acumulado||0))
+    .slice(0, 5);
+  const container = document.getElementById('bp-container');
+  if (!bps.length) {
+    container.innerHTML = '<div class="empty-state">Sin candidatos Blueprint</div>';
+    return;
+  }
+  container.innerHTML = bps.map((r, i) => {
+    const p = r.pacientes;
+    const esActivo = p?.blueprint_activo;
+    return `
+    <div class="bp-row" style="background:${esActivo?'var(--purple-l)':'var(--amber-l)'}">
+      <div class="bp-av" style="background:${esActivo?'var(--purple)':'var(--amber)'}">${initials(p?.nombre, p?.apellido)}</div>
+      <div style="flex:1">
+        <div class="bp-name" style="color:${esActivo?'var(--purple)':'var(--amber)'}">${p?.nombre||''} ${p?.apellido||''}</div>
+        <div class="bp-ticket" style="color:${esActivo?'var(--purple)':'var(--amber)'}">${fmt(p?.ticket_acumulado)}</div>
+      </div>
+      <span class="bp-estado ${esActivo?'bp-act':'bp-cand'}">${esActivo?'Activo':'Candidato'}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderSeguimientos() {
+  const hoy = new Date().toISOString().split('T')[0];
+  const pendientes = allData.filter(r =>
+    r.fecha_seguimiento === hoy && !r.estados?.es_final_negativo
+  );
+  const container = document.getElementById('seg-container');
+  document.getElementById('seg-count').textContent =
+    pendientes.length ? `· ${pendientes.length} pendiente${pendientes.length>1?'s':''}` : '';
+  if (!pendientes.length) {
+    container.innerHTML = '<div class="empty-state">Sin seguimientos pendientes para hoy ✓</div>';
+    return;
+  }
+  container.innerHTML = pendientes.map((r, i) => {
+    const p = r.pacientes;
+    const [bg, fg] = AV_COLORS[i % AV_COLORS.length];
+    return `
+    <div class="seg-row">
+      <div class="seg-av" style="background:${bg};color:${fg}">${initials(p?.nombre, p?.apellido)}</div>
+      <div style="flex:1">
+        <div class="seg-name">${p?.nombre||''} ${p?.apellido||''}</div>
+        <div class="seg-accion">${r.proxima_accion||'Sin acción definida'}</div>
+      </div>
+      <span class="seg-badge" style="background:var(--amber-l);color:var(--amber)">${r.estados?.nombre||''}</span>
+      <div class="seg-fecha">Hoy</div>
+    </div>`;
+  }).join('');
+}
+
+function setPeriod(p, el) {
+  period = p;
+  document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('act'));
+  el.classList.add('act');
+  // Mostrar loading al cambiar período
+  document.getElementById('loading').style.display = 'flex';
+  loadData();
+}
+
+// Esperar que todo esté cargado antes de iniciar
+window.addEventListener('load', function() {
+  loadData();
+});
+</script>
+</body>
+</html>
