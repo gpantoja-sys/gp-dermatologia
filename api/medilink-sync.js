@@ -1,15 +1,16 @@
 // ============================================================
 // api/medilink-sync.js — GP Dermatología
 // Sincronización Medilink → Supabase CRM
-// Cron: cada 15 minutos (vercel.json)
+// Cron: cada 30 minutos (vercel.json)
 // ============================================================
 
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const MEDILINK_BASE  = 'https://api.medilink.healthatom.com/api/v1';
 const MEDILINK_TOKEN = process.env.MEDILINK_TOKEN;
 const SUPABASE_URL   = process.env.NEXT_PUBLIC_SUPABASE_URL   || 'https://nirxkzkfcctdigvuapuc.supabase.co';
-const SUPABASE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY  || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY  || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+                       || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pcnhremtmY2N0ZGlndnVhcHVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDY5MTUsImV4cCI6MjA5NTEyMjkxNX0.iGTkHTRgdsEDoUsvS9ApQtSRAJV52z-_IASlFBmPqDM';
 
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -35,15 +36,12 @@ function log(msg) {
 }
 
 // ── MÓDULO 1: Sincronizar datos demográficos de pacientes ────
-// Busca pacientes en el CRM que tengan RUT pero les falten
-// datos (sexo, comuna, dirección, email) y los completa desde Medilink.
 async function syncDatosPacientes() {
   log('Iniciando sync datos demográficos...');
 
-  // Obtener pacientes del CRM que tienen RUT pero faltan datos
   const { data: pacientesCRM, error } = await sb
     .from('pacientes')
-    .select('id, rut, sexo, comuna, direccion, email')
+    .select('id, rut, sexo, comuna, direccion, email, id_medilink')
     .not('rut', 'is', null)
     .limit(50000);
 
@@ -56,10 +54,8 @@ async function syncDatosPacientes() {
   log(`Pacientes con datos incompletos: ${incompletos.length}`);
   let actualizados = 0;
 
-  for (const paciente of incompletos) {
+  for (const paciente of incompletos.slice(0, 50)) { // max 50 por ciclo
     try {
-      // Buscar en Medilink por RUT
-      const rutLimpio = paciente.rut.replace(/\./g, '').replace('-', '').toLowerCase();
       const resultados = await medilink('pacientes', {
         numero_documento: { eq: paciente.rut }
       });
@@ -73,9 +69,7 @@ async function syncDatosPacientes() {
       if (!paciente.comuna    && p.comuna)     update.comuna    = p.comuna;
       if (!paciente.direccion && p.direccion)  update.direccion = p.direccion;
       if (!paciente.email     && p.email)      update.email     = p.email;
-
-      // Guardar id_medilink para cruces futuros
-      if (p.id) update.id_medilink = String(p.id);
+      if (p.id && !paciente.id_medilink)       update.id_medilink = String(p.id);
 
       if (Object.keys(update).length > 0) {
         const { error: upErr } = await sb
@@ -85,8 +79,7 @@ async function syncDatosPacientes() {
         if (!upErr) actualizados++;
       }
 
-      // Pequeña pausa para no saturar la API (20 req/min)
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 350));
     } catch (e) {
       log(`Error paciente ${paciente.id}: ${e.message}`);
     }
@@ -97,12 +90,9 @@ async function syncDatosPacientes() {
 }
 
 // ── MÓDULO 2: Sincronizar citas recientes de Medilink ────────
-// Consulta citas actualizadas en las últimas 2 horas y
-// actualiza el estado del lead correspondiente en el CRM.
 async function syncCitas() {
   log('Iniciando sync citas...');
 
-  // Calcular ventana de tiempo: últimas 2 horas
   const desde = new Date(Date.now() - 2 * 60 * 60 * 1000);
   const desdeStr = desde.toISOString().replace('T', ' ').substring(0, 19);
 
@@ -118,14 +108,11 @@ async function syncCitas() {
 
   log(`Citas actualizadas en Medilink: ${citas.length}`);
 
-  // Mapeo de estados Medilink → estados CRM
   const ESTADO_MAP = {
-    'Confirmado':     'Confirmado',
-    'No confirmado':  'Agendado',
-    'Atendido':       'Asistió',
-    'Anulado':        null,   // null = no cambiar estado CRM automáticamente
-    'En espera':      'Confirmado',
-    'Ausente':        null,
+    'Confirmado':    'Confirmado',
+    'No confirmado': 'Agendado',
+    'Atendido':      'Asistió',
+    'En espera':     'Confirmado',
   };
 
   let actualizados = 0;
@@ -134,7 +121,6 @@ async function syncCitas() {
     try {
       if (!cita.id_paciente) continue;
 
-      // Buscar paciente en CRM por id_medilink o por RUT
       const { data: pacientes } = await sb
         .from('pacientes')
         .select('id')
@@ -142,23 +128,19 @@ async function syncCitas() {
         .limit(1);
 
       if (!pacientes || pacientes.length === 0) continue;
-      const pacienteId = pacientes[0].id;
 
-      // Buscar registro activo en pipeline
       const { data: registros } = await sb
         .from('pipeline_registros')
-        .select('id, estados(nombre)')
-        .eq('paciente_id', pacienteId)
+        .select('id')
+        .eq('paciente_id', pacientes[0].id)
         .eq('activo', true)
         .limit(1);
 
       if (!registros || registros.length === 0) continue;
-      const registro = registros[0];
 
       const nuevoEstadoNombre = ESTADO_MAP[cita.estado_cita];
       if (!nuevoEstadoNombre) continue;
 
-      // Obtener id del nuevo estado
       const { data: estados } = await sb
         .from('estados')
         .select('id')
@@ -167,21 +149,16 @@ async function syncCitas() {
 
       if (!estados || estados.length === 0) continue;
 
-      // Actualizar estado del lead
       const { error: upErr } = await sb
         .from('pipeline_registros')
-        .update({
-          estado_id: estados[0].id,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', registro.id);
+        .update({ estado_id: estados[0].id })
+        .eq('id', registros[0].id);
 
       if (!upErr) {
-        // Registrar en historial
         await sb.from('historial_estados').insert({
-          pipeline_registro_id: registro.id,
+          pipeline_registro_id: registros[0].id,
           estado_id: estados[0].id,
-          nota: `Sincronizado desde Medilink — cita ${cita.id} (${cita.estado_cita})`,
+          nota: `Medilink — cita ${cita.id} (${cita.estado_cita})`,
           created_at: new Date().toISOString()
         });
         actualizados++;
@@ -198,12 +175,9 @@ async function syncCitas() {
 }
 
 // ── MÓDULO 3: Sincronizar atenciones (ticket acumulado) ──────
-// Consulta atenciones recientes en Medilink y actualiza el
-// ticket acumulado de los pacientes en el CRM.
 async function syncAtenciones() {
   log('Iniciando sync atenciones (ticket)...');
 
-  // Atenciones de los últimos 7 días
   const desde = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const desdeStr = desde.toISOString().substring(0, 10);
 
@@ -221,7 +195,6 @@ async function syncAtenciones() {
   log(`Atenciones finalizadas recientes: ${atenciones.length}`);
   let actualizados = 0;
 
-  // Agrupar por paciente y sumar totales
   const totalPorPaciente = {};
   for (const atencion of atenciones) {
     if (!atencion.id_paciente || !atencion.total_realizado) continue;
@@ -231,7 +204,6 @@ async function syncAtenciones() {
 
   for (const [idMedilink, totalNuevo] of Object.entries(totalPorPaciente)) {
     try {
-      // Buscar paciente en CRM
       const { data: pacientes } = await sb
         .from('pacientes')
         .select('id, ticket_acumulado')
@@ -241,28 +213,21 @@ async function syncAtenciones() {
       if (!pacientes || pacientes.length === 0) continue;
 
       const paciente = pacientes[0];
-      const ticketActual = paciente.ticket_acumulado || 0;
+      if (totalNuevo <= (paciente.ticket_acumulado || 0)) continue;
 
-      // Solo actualizar si el nuevo total es mayor (evitar sobrescribir con datos viejos)
-      if (totalNuevo <= ticketActual) continue;
+      const update = { ticket_acumulado: totalNuevo };
+      if (totalNuevo >= 4000000) update.candidato_blueprint = true;
 
       const { error: upErr } = await sb
         .from('pacientes')
-        .update({
-          ticket_acumulado: totalNuevo,
-          // Si supera umbral Blueprint, marcar candidato
-          candidato_blueprint: totalNuevo >= 4000000 ? true : undefined
-        })
+        .update(update)
         .eq('id', paciente.id);
 
-      if (!upErr) {
-        actualizados++;
-        log(`Ticket actualizado — paciente ${paciente.id}: $${ticketActual.toLocaleString()} → $${totalNuevo.toLocaleString()}`);
-      }
+      if (!upErr) actualizados++;
 
       await new Promise(r => setTimeout(r, 200));
     } catch (e) {
-      log(`Error atencion paciente ${idMedilink}: ${e.message}`);
+      log(`Error ticket paciente ${idMedilink}: ${e.message}`);
     }
   }
 
@@ -271,8 +236,7 @@ async function syncAtenciones() {
 }
 
 // ── HANDLER PRINCIPAL ────────────────────────────────────────
-export default async function handler(req, res) {
-  // Seguridad: solo Vercel Cron o request con header correcto
+module.exports = async function handler(req, res) {
   const authHeader = req.headers.authorization;
   const cronHeader = req.headers['x-vercel-cron'];
 
@@ -287,37 +251,19 @@ export default async function handler(req, res) {
   const inicio = Date.now();
   log('=== Inicio sincronización Medilink ===');
 
-  const resultados = {
-    demograficos: 0,
-    citas: 0,
-    atenciones: 0,
-    errores: []
-  };
+  const resultados = { demograficos: 0, citas: 0, atenciones: 0, errores: [] };
 
-  try {
-    resultados.demograficos = await syncDatosPacientes();
-  } catch (e) {
-    log(`Error en syncDatosPacientes: ${e.message}`);
-    resultados.errores.push(`demograficos: ${e.message}`);
-  }
+  try { resultados.demograficos = await syncDatosPacientes(); }
+  catch (e) { resultados.errores.push(`demograficos: ${e.message}`); }
 
-  try {
-    resultados.citas = await syncCitas();
-  } catch (e) {
-    log(`Error en syncCitas: ${e.message}`);
-    resultados.errores.push(`citas: ${e.message}`);
-  }
+  try { resultados.citas = await syncCitas(); }
+  catch (e) { resultados.errores.push(`citas: ${e.message}`); }
 
-  try {
-    resultados.atenciones = await syncAtenciones();
-  } catch (e) {
-    log(`Error en syncAtenciones: ${e.message}`);
-    resultados.errores.push(`atenciones: ${e.message}`);
-  }
+  try { resultados.atenciones = await syncAtenciones(); }
+  catch (e) { resultados.errores.push(`atenciones: ${e.message}`); }
 
   const duracion = ((Date.now() - inicio) / 1000).toFixed(1);
   log(`=== Sync completado en ${duracion}s ===`);
-  log(`Resultados: demográficos=${resultados.demograficos}, citas=${resultados.citas}, atenciones=${resultados.atenciones}`);
 
   return res.status(200).json({
     ok: true,
@@ -325,4 +271,4 @@ export default async function handler(req, res) {
     ...resultados,
     timestamp: new Date().toISOString()
   });
-}
+};
