@@ -39,8 +39,19 @@ module.exports = async function handler(req, res) {
       }
 
     } else if (tipo === 'tel') {
-      const digits = valor.replace(/\D/g, '');
-      const formatos = [digits, digits.slice(-9), digits.slice(-8)];
+      // Medilink guarda el celular en formato internacional: +56998724055
+      // Antes se buscaba SIN el +56, por eso nunca calzaba.
+      // Ahora probamos primero el formato con +56 (el que usa Medilink).
+      const digits = valor.replace(/\D/g, '');   // ej: "56998724055"
+      const nueve  = digits.slice(-9);            // ej: "998724055"
+      const formatos = [
+        `+${digits}`,      // +56998724055  <- formato real en Medilink
+        `+56${nueve}`,     // +56998724055  (canónico Chile, por si acaso)
+        valor,             // tal cual llegó (ya viene con +)
+        digits,            // 56998724055
+        nueve,             // 998724055
+        digits.slice(-8),  // 98724055
+      ];
 
       for (const tel of [...new Set(formatos)]) {
         const url = `${MEDILINK_BASE}/pacientes?q=${encodeURIComponent(JSON.stringify({ celular: { eq: tel } }))}`;
