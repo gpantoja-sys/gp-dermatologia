@@ -1,1 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Importar pacientes — GP Dermatología</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin:0; background:#0a0a0a; color:#fff; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .card { width:100%; max-width:460px; background:#161616; border:1px solid #2a2a2a; border-radius:18px; padding:26px; }
+  h1 { font-size:18px; margin:0 0 6px; }
+  p.sub { font-size:13px; color:#888; margin:0 0 20px; line-height:1.5; }
+  label { font-size:11px; color:#888; letter-spacing:1px; text-transform:uppercase; display:block; margin-bottom:6px; }
+  input { width:100%; background:#222; border:1px solid #3a3a3c; border-radius:10px; padding:13px 14px; color:#fff; font-size:15px; margin-bottom:16px; }
+  button { width:100%; background:#fff; color:#0a0a0a; border:none; border-radius:12px; padding:15px; font-size:15px; font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  .bar-wrap { height:8px; background:#222; border-radius:6px; overflow:hidden; margin:20px 0 12px; display:none; }
+  .bar { height:100%; width:0%; background:#6bcb77; transition:width .3s; }
+  #status { font-size:14px; color:#ccc; line-height:1.6; min-height:22px; }
+  .ok { color:#6bcb77 !important; font-weight:600; }
+  .err { color:#ff6b6b !important; }
+  .big { font-size:26px; font-weight:700; color:#fff; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Importar pacientes desde Medilink</h1>
+    <p class="sub">Trae tu padrón completo a la base local (por tandas, sin que el navegador se corte). Respeta la comuna y el sexo que ya hayas editado a mano.</p>
+    <label for="key">Clave de acceso</label>
+    <input id="key" type="password" placeholder="Tu CRON_SECRET" autocomplete="off">
+    <button id="go" onclick="iniciar()">Iniciar importación</button>
+    <div class="bar-wrap" id="barwrap"><div class="bar" id="bar"></div></div>
+    <div id="status"></div>
+  </div>
 
+<script>
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  let corriendo = false;
+
+  function setStatus(html, cls){
+    const el = document.getElementById('status');
+    el.className = cls || '';
+    el.innerHTML = html;
+  }
+
+  async function iniciar(){
+    if(corriendo) return;
+    const key = document.getElementById('key').value.trim();
+    if(!key){ setStatus('Escribe la clave primero.', 'err'); return; }
+    corriendo = true;
+    document.getElementById('go').disabled = true;
+    document.getElementById('barwrap').style.display = 'block';
+
+    let cursor = null, totalUp = 0, totalPag = 0, tanda = 0, fallosSeguidos = 0;
+    const LOTE = 15;
+
+    while(true){
+      tanda++;
+      let url = `/api/import-pacientes?key=${encodeURIComponent(key)}&lote=${LOTE}`;
+      if(cursor) url += `&cursor=${encodeURIComponent(cursor)}`;
+
+      let j;
+      try {
+        const r = await fetch(url);
+        j = await r.json();
+      } catch(e) {
+        fallosSeguidos++;
+        if(fallosSeguidos >= 4){ setStatus('⚠️ Se perdió la conexión varias veces. Vuelve a iniciar — continuará donde quedó.', 'err'); break; }
+        setStatus(`Reintentando tanda ${tanda}… (${totalUp} pacientes hasta ahora)`);
+        await sleep(2500);
+        tanda--;
+        continue;
+      }
+      fallosSeguidos = 0;
+
+      if(j.error){
+        if(j.error.includes('autorizado')){ setStatus('Clave incorrecta.', 'err'); }
+        else setStatus('Error: ' + j.error, 'err');
+        break;
+      }
+
+      totalUp  += (j.upserted || 0);
+      totalPag += (j.paginas  || 0);
+
+      // barra aproximada (estimando ~5000 pacientes)
+      const pct = Math.min(98, Math.round(totalUp / 5000 * 100));
+      document.getElementById('bar').style.width = pct + '%';
+      setStatus(`<span class="big">${totalUp.toLocaleString('es-CL')}</span> pacientes importados…<br><span style="font-size:12px;color:#888">(${totalPag} páginas procesadas)</span>`);
+
+      if(j.terminado){
+        document.getElementById('bar').style.width = '100%';
+        setStatus(`✅ Listo. <span class="big">${totalUp.toLocaleString('es-CL')}</span> pacientes en tu base.<br><span style="font-size:12px;color:#888">Ya puedes cerrar esta página.</span>`, 'ok');
+        break;
+      }
+
+      cursor = j.siguienteCursor;
+      if(!cursor){
+        setStatus(`Terminó. ${totalUp.toLocaleString('es-CL')} pacientes importados.`, 'ok');
+        break;
+      }
+      await sleep(400);
+    }
+
+    corriendo = false;
+    document.getElementById('go').disabled = false;
+    document.getElementById('go').textContent = 'Volver a ejecutar';
+  }
+</script>
+</body>
+</html>
