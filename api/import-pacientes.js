@@ -93,7 +93,7 @@ module.exports = async function handler(req, res){
 
   const LOTE = parseInt(req.query.lote, 10) || 999;
   let url = req.query.cursor ? req.query.cursor : `${MEDILINK_BASE}/pacientes`;
-  let paginas = 0, totalLeidos = 0, upserted = 0, errores = 0;
+  let paginas = 0, totalLeidos = 0, upserted = 0, errores = 0, primerError = null;
   let siguienteCursor = null, terminado = false;
 
   while(url){
@@ -116,12 +116,10 @@ module.exports = async function handler(req, res){
       const sexoLocal   = (loc.sexo   && String(loc.sexo).trim()   !== '') ? loc.sexo   : null;
       return {
         rut: p.rut,
-        nombre: p.nombre || null,
-        apellido: p.apellidos || null,
+        nombre: [p.nombre, p.apellidos].filter(Boolean).join(' ') || null,
         nac: p.fecha_nacimiento || null,
         tel: p.celular || p.telefono || null,
         email: p.email || null,
-        direccion: p.direccion || null,
         id_medilink: p.id ? String(p.id) : null,
         comuna: comunaLocal || p.comuna || null,
         sexo:   sexoLocal   || mapSexo(p.sexo)
@@ -135,8 +133,9 @@ module.exports = async function handler(req, res){
           headers: { ...SB, Prefer: 'resolution=merge-duplicates,return=minimal' },
           body: JSON.stringify(filas)
         });
-        if(ur.ok) upserted += filas.length; else errores++;
-      }catch(e){ errores++; }
+        if(ur.ok){ upserted += filas.length; }
+        else { errores++; if(!primerError){ primerError = `${ur.status}: ${(await ur.text()).slice(0,200)}`; } }
+      }catch(e){ errores++; if(!primerError) primerError = e.message; }
     }
 
     url = (json.links && json.links.next) ? json.links.next : null;
@@ -153,6 +152,7 @@ module.exports = async function handler(req, res){
     pacientes_leidos: totalLeidos,
     upserted,
     errores,
+    primerError,
     duracion_segundos: parseFloat(duracion),
     siguienteCursor: siguienteCursor || null,
     nota: terminado
