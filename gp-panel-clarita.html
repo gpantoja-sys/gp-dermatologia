@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Clarita · GP Dermatología</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     PANEL DE CLARITA — GP Dermatología
+     Módulo 1: Cola de acciones en vivo + Ajustes de honorarios
+     Estética Ciclo de Vida GP: crema + verde oscuro, Playfair.
+     Datos demo simulados. Realtime real = Fase 3.
+     ============================================================ */
+
+  :root{
+    --crema:#F4EFE6; --crema-clara:#FBF8F2; --papel:#FFFDF9;
+    --verde:#1E3A2F; --verde-hondo:#142A20; --verde-medio:#3F5C4E;
+    --salvia:#E2E8DC; --salvia-borde:#CBD6C2;
+    --laton:#A98B5B; --laton-suave:#EFE5D2; --laton-borde:#E0CFA8;
+    --tinta:#1B271F; --tinta-suave:#6E7C72; --linea:#E4DCCD;
+    --arcilla:#B07A4E; --arcilla-fondo:#F3E7DB; --arcilla-borde:#E4C9B0;
+    --jade:#2E6B57; --jade-fondo:#E0EBE3;
+    --radio:14px; --radio-sm:9px;
+    --sombra:0 1px 2px rgba(20,42,32,.04), 0 8px 24px rgba(20,42,32,.06);
+    --sombra-alta:0 4px 12px rgba(20,42,32,.08), 0 18px 40px rgba(20,42,32,.10);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:'Inter',system-ui,sans-serif; background:var(--crema); color:var(--tinta); line-height:1.5; -webkit-font-smoothing:antialiased; min-height:100vh; }
+  .mono{ font-family:'Spline Sans Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums; }
+  .serif{ font-family:'Playfair Display',serif; }
+
+  /* Barra superior */
+  .topbar{ background:var(--verde-hondo); color:var(--crema); padding:14px clamp(16px,4vw,40px); display:flex; align-items:center; gap:18px; position:sticky; top:0; z-index:50; box-shadow:0 1px 0 rgba(0,0,0,.2); }
+  .brand{ display:flex; align-items:baseline; gap:11px; }
+  .brand .mark{ font-family:'Playfair Display',serif; font-weight:700; font-size:1.05rem; letter-spacing:.04em; border:1.5px solid var(--laton); border-radius:7px; padding:3px 8px; line-height:1; color:var(--laton-suave); }
+  .brand .name{ font-family:'Playfair Display',serif; font-size:1.18rem; font-weight:600; letter-spacing:.01em; }
+  .brand .sub{ font-size:.74rem; letter-spacing:.16em; text-transform:uppercase; color:#9DB3A4; margin-left:2px; }
+  .topbar .spacer{ flex:1; }
+  .live{ display:flex; align-items:center; gap:8px; font-size:.78rem; letter-spacing:.1em; text-transform:uppercase; color:#B9CABD; }
+  .live .dot{ width:9px; height:9px; border-radius:50%; background:#6FBF8F; animation:pulso 2.4s ease-out infinite; }
+  @keyframes pulso{ 0%{box-shadow:0 0 0 0 rgba(111,191,143,.55);} 70%{box-shadow:0 0 0 10px rgba(111,191,143,0);} 100%{box-shadow:0 0 0 0 rgba(111,191,143,0);} }
+  .operador{ display:flex; align-items:center; gap:9px; }
+  .operador label{ font-size:.78rem; color:#9DB3A4; letter-spacing:.04em; }
+  .operador select{ font-family:'Inter',sans-serif; font-size:.85rem; font-weight:500; background:rgba(255,255,255,.07); color:var(--crema); border:1px solid rgba(255,255,255,.16); border-radius:8px; padding:6px 30px 6px 11px; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23B9CABD' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>"); background-repeat:no-repeat; background-position:right 10px center; }
+
+  /* Pestañas */
+  .tabs{ background:var(--crema-clara); border-bottom:1px solid var(--linea); padding:0 clamp(16px,4vw,40px); display:flex; gap:4px; position:sticky; top:57px; z-index:40; }
+  .tab{ font-family:'Inter',sans-serif; font-size:.92rem; font-weight:500; color:var(--tinta-suave); background:none; border:none; cursor:pointer; padding:15px 16px 13px; position:relative; display:flex; align-items:center; gap:9px; }
+  .tab:hover{ color:var(--verde); }
+  .tab[aria-selected="true"]{ color:var(--verde); }
+  .tab[aria-selected="true"]::after{ content:''; position:absolute; left:12px; right:12px; bottom:0; height:2.5px; background:var(--verde); border-radius:2px 2px 0 0; }
+  .tab .pill{ font-family:'Spline Sans Mono',monospace; font-size:.72rem; background:var(--verde); color:var(--crema); border-radius:20px; padding:1px 8px; min-width:20px; text-align:center; }
+  .tab[aria-selected="false"] .pill{ background:var(--salvia-borde); color:var(--verde-medio); }
+
+  main{ padding:clamp(20px,4vw,40px); max-width:1080px; margin:0 auto; }
+  .panel{ display:none; }
+  .panel.activo{ display:block; animation:fundir .35s ease; }
+  @keyframes fundir{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  .sec-head{ display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:22px; }
+  .sec-head h1{ font-family:'Playfair Display',serif; font-weight:600; font-size:clamp(1.5rem,3.5vw,2rem); color:var(--verde); letter-spacing:.005em; }
+  .sec-head .lede{ color:var(--tinta-suave); font-size:.92rem; margin-top:3px; }
+  .sec-head .conteo{ color:var(--verde-medio); font-weight:500; }
+  .filtros{ display:flex; gap:7px; }
+  .chip{ font-family:'Inter',sans-serif; font-size:.84rem; font-weight:500; color:var(--verde-medio); background:var(--crema-clara); border:1px solid var(--linea); border-radius:30px; padding:7px 15px; cursor:pointer; transition:all .18s; }
+  .chip:hover{ border-color:var(--salvia-borde); }
+  .chip[aria-pressed="true"]{ background:var(--verde); color:var(--crema); border-color:var(--verde); }
+
+  /* Tarjetas */
+  .cola{ display:flex; flex-direction:column; gap:16px; }
+  .card{ background:var(--papel); border:1px solid var(--linea); border-left:4px solid var(--salvia-borde); border-radius:var(--radio); box-shadow:var(--sombra); overflow:hidden; transition:box-shadow .2s, transform .2s, opacity .35s; }
+  .card.tipo-apoderado{ border-left-color:var(--arcilla); }
+  .card.tipo-pago{ border-left-color:var(--jade); }
+  .card.entrando{ animation:entrar .5s cubic-bezier(.2,.7,.3,1); }
+  @keyframes entrar{ from{opacity:0; transform:translateY(-10px) scale(.99); box-shadow:0 0 0 2px var(--laton-suave);} to{opacity:1; transform:none;} }
+  .card.saliendo{ opacity:0; transform:translateX(28px); }
+  .card-top{ display:flex; align-items:flex-start; gap:14px; padding:18px 20px 14px; }
+  .tipo-tag{ font-size:.7rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; padding:4px 10px; border-radius:6px; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
+  .tipo-apoderado .tipo-tag{ background:var(--arcilla-fondo); color:var(--arcilla); }
+  .tipo-pago .tipo-tag{ background:var(--jade-fondo); color:var(--jade); }
+  .ident{ flex:1; min-width:0; }
+  .ident .nombre{ font-family:'Playfair Display',serif; font-size:1.28rem; font-weight:600; color:var(--verde); line-height:1.2; }
+  .ident .rut{ font-size:.86rem; color:var(--tinta-suave); margin-top:2px; }
+  .ident .ctx{ font-size:.88rem; color:var(--verde-medio); margin-top:7px; }
+  .tag-colega{ color:var(--laton); font-weight:500; }
+  .espera{ text-align:right; white-space:nowrap; }
+  .espera .min{ font-size:1.02rem; font-weight:500; color:var(--tinta); }
+  .espera .lbl{ font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:var(--tinta-suave); }
+  .espera.urgente .min{ color:var(--arcilla); }
+  .card-body{ padding:4px 20px 18px; border-top:1px solid var(--crema); }
+
+  /* Apoderado */
+  .menor-info{ background:var(--arcilla-fondo); border-radius:var(--radio-sm); padding:11px 14px; margin:12px 0 14px; font-size:.88rem; color:#7A5638; display:flex; align-items:center; gap:9px; }
+  .menor-info .ico{ font-size:1.1rem; }
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  .campo{ display:flex; flex-direction:column; gap:5px; }
+  .campo label{ font-size:.74rem; letter-spacing:.04em; color:var(--tinta-suave); font-weight:500; }
+  .campo input, .campo select{ font-family:'Inter',sans-serif; font-size:.92rem; color:var(--tinta); background:var(--crema-clara); border:1px solid var(--linea); border-radius:9px; padding:10px 12px; width:100%; }
+  .campo input.mono{ font-family:'Spline Sans Mono',monospace; }
+  .campo input:focus, .campo select:focus{ outline:2px solid var(--verde); outline-offset:1px; border-color:var(--verde); }
+  .campo select{ appearance:none; cursor:pointer; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%236E7C72' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>"); background-repeat:no-repeat; background-position:right 11px center; padding-right:30px; }
+
+  /* Pago: desglose */
+  .desglose{ margin:12px 0 14px; border:1px solid var(--linea); border-radius:var(--radio-sm); overflow:hidden; }
+  .linea-soc{ display:flex; align-items:center; justify-content:space-between; padding:11px 14px; gap:12px; }
+  .linea-soc + .linea-soc{ border-top:1px solid var(--crema); }
+  .linea-soc .soc{ display:flex; flex-direction:column; }
+  .linea-soc .soc b{ font-size:.92rem; font-weight:600; color:var(--verde); }
+  .linea-soc .soc small{ font-size:.74rem; color:var(--tinta-suave); }
+  .linea-soc .monto{ font-size:.98rem; font-weight:500; white-space:nowrap; }
+  .badge-iva{ font-size:.66rem; letter-spacing:.06em; text-transform:uppercase; padding:2px 7px; border-radius:5px; margin-left:8px; }
+  .badge-iva.exento{ background:var(--salvia); color:var(--verde-medio); }
+  .badge-iva.afecto{ background:var(--laton-suave); color:var(--laton); }
+  .base-tachado{ text-decoration:line-through; color:var(--tinta-suave); margin-right:9px; font-size:.84rem; }
+  .no-ajustable{ font-size:.7rem; color:var(--tinta-suave); }
+  .linea-total{ display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--crema-clara); border-top:1px solid var(--linea); }
+  .linea-total .lbl{ font-size:.82rem; letter-spacing:.05em; text-transform:uppercase; color:var(--tinta-suave); }
+  .linea-total .monto{ font-family:'Spline Sans Mono',monospace; font-size:1.18rem; font-weight:500; color:var(--verde); }
+  .sujeto{ font-size:.72rem; color:var(--laton); margin-left:8px; letter-spacing:.02em; }
+
+  /* Ajuste de honorarios */
+  .ajuste-box{ margin:12px 0 14px; border:1px solid var(--linea); border-radius:var(--radio-sm); background:var(--crema-clara); }
+  .ajuste-box summary{ list-style:none; cursor:pointer; padding:11px 14px; font-size:.88rem; font-weight:500; color:var(--verde-medio); display:flex; align-items:center; gap:8px; }
+  .ajuste-box summary::-webkit-details-marker{ display:none; }
+  .ajuste-box summary::after{ content:'▾'; margin-left:auto; color:var(--tinta-suave); font-size:.8rem; }
+  .ajuste-box[open] summary::after{ content:'▴'; }
+  .ajuste-opciones{ display:flex; flex-direction:column; border-top:1px solid var(--linea); }
+  .opcion-ajuste{ text-align:left; background:none; border:none; padding:12px 14px; cursor:pointer; font-family:'Inter',sans-serif; font-size:.9rem; color:var(--tinta); display:flex; flex-direction:column; gap:2px; }
+  .opcion-ajuste + .opcion-ajuste{ border-top:1px solid var(--crema); }
+  .opcion-ajuste:hover{ background:var(--salvia); }
+  .opcion-ajuste b{ color:var(--verde); font-weight:600; }
+  .opcion-ajuste small{ color:var(--tinta-suave); font-size:.78rem; }
+  .opcion-ajuste .req{ color:var(--laton); }
+
+  .auth-estado{ margin:12px 0 14px; border-radius:var(--radio-sm); padding:12px 14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .auth-estado.pendiente{ background:var(--laton-suave); border:1px solid var(--laton-borde); }
+  .auth-estado.aplicado{ background:var(--salvia); border:1px solid var(--salvia-borde); }
+  .auth-estado.rechazado{ background:var(--arcilla-fondo); border:1px solid var(--arcilla-borde); }
+  .auth-estado .txt{ flex:1; min-width:170px; font-size:.88rem; color:var(--tinta); }
+  .auth-estado .txt b{ color:var(--verde); }
+  .auth-estado .txt small{ display:block; color:var(--tinta-suave); font-size:.78rem; margin-top:1px; }
+  .auth-demo{ display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+  .auth-demo .demo-lbl{ font-size:.66rem; letter-spacing:.08em; text-transform:uppercase; color:var(--laton); margin-right:2px; }
+  .btn-mini{ font-family:'Inter',sans-serif; font-size:.82rem; font-weight:600; border:1px solid var(--linea); border-radius:8px; padding:7px 13px; cursor:pointer; background:var(--papel); color:var(--verde-medio); }
+  .btn-mini.si{ background:var(--verde); color:var(--crema); border-color:var(--verde); }
+  .btn-mini.no{ color:var(--arcilla); }
+  .btn-mini.quitar{ color:var(--tinta-suave); }
+
+  .medio{ display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap; }
+  .medio .lbl{ font-size:.82rem; color:var(--tinta-suave); }
+  .seg{ display:inline-flex; border:1px solid var(--linea); border-radius:9px; overflow:hidden; background:var(--crema-clara); }
+  .seg button{ font-family:'Inter',sans-serif; font-size:.86rem; font-weight:500; color:var(--verde-medio); background:none; border:none; padding:8px 16px; cursor:pointer; }
+  .seg button[aria-pressed="true"]{ background:var(--verde); color:var(--crema); }
+  .medio .nota-pos{ font-size:.78rem; color:var(--laton); display:none; }
+  .medio.es-pos .nota-pos{ display:inline; }
+  .boletas-nota{ font-size:.8rem; color:var(--tinta-suave); margin-top:4px; }
+  .boletas-nota b{ color:var(--verde-medio); }
+
+  .acciones{ display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
+  .btn{ font-family:'Inter',sans-serif; font-size:.92rem; font-weight:600; letter-spacing:.01em; border:none; border-radius:10px; padding:12px 22px; cursor:pointer; display:inline-flex; align-items:center; gap:9px; transition:all .18s; }
+  .btn-primario{ background:var(--verde); color:var(--crema); box-shadow:0 1px 2px rgba(20,42,32,.2); }
+  .btn-primario:hover:not(:disabled){ background:var(--verde-hondo); }
+  .btn-primario:disabled{ background:var(--salvia-borde); color:#fff; cursor:not-allowed; box-shadow:none; }
+  .btn-fantasma{ background:none; color:var(--tinta-suave); }
+  .btn-fantasma:hover{ color:var(--verde); background:var(--crema-clara); }
+  .btn .flecha{ transition:transform .18s; }
+  .btn-primario:hover:not(:disabled) .flecha{ transform:translateX(3px); }
+
+  .vacio{ text-align:center; padding:70px 24px; background:var(--crema-clara); border:1px dashed var(--salvia-borde); border-radius:var(--radio); }
+  .vacio .icono{ font-size:1.8rem; color:var(--salvia-borde); }
+  .vacio h2{ font-family:'Playfair Display',serif; font-size:1.5rem; color:var(--verde); font-weight:600; margin:14px 0 8px; }
+  .vacio p{ color:var(--tinta-suave); max-width:430px; margin:0 auto; font-size:.95rem; }
+
+  .log{ display:flex; flex-direction:column; border:1px solid var(--linea); border-radius:var(--radio); overflow:hidden; background:var(--papel); }
+  .log-row{ display:flex; align-items:center; gap:14px; padding:14px 18px; }
+  .log-row + .log-row{ border-top:1px solid var(--crema); }
+  .log-row .punto{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .log-row.t-apoderado .punto{ background:var(--arcilla); }
+  .log-row.t-pago .punto{ background:var(--jade); }
+  .log-row.t-ajuste .punto{ background:var(--laton); }
+  .log-row.t-pack .punto{ background:var(--laton); }
+  .log-row .detalle{ flex:1; min-width:0; }
+  .log-row .detalle b{ font-weight:600; color:var(--verde); }
+  .log-row .detalle .sub{ font-size:.82rem; color:var(--tinta-suave); }
+  .log-row .sello{ text-align:right; white-space:nowrap; }
+  .log-row .sello .quien{ font-size:.84rem; font-weight:500; color:var(--verde-medio); }
+  .log-row .sello .cuando{ font-size:.78rem; color:var(--tinta-suave); }
+
+  .proximo{ text-align:center; padding:64px 24px; background:var(--crema-clara); border:1px dashed var(--salvia-borde); border-radius:var(--radio); }
+  .proximo .tag{ font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--laton); }
+  .proximo h2{ font-family:'Playfair Display',serif; font-size:1.6rem; color:var(--verde); font-weight:600; margin:10px 0; }
+  .proximo p{ color:var(--tinta-suave); max-width:460px; margin:0 auto; }
+
+  .totem-feed{ position:fixed; left:clamp(16px,4vw,40px); bottom:18px; z-index:60; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+  .totem-ghost{ background:var(--verde-hondo); color:var(--crema-clara); border-radius:10px; padding:10px 15px; font-size:.84rem; box-shadow:var(--sombra-alta); display:flex; align-items:center; gap:10px; animation:ghostIn .4s ease, ghostOut .5s ease 3.4s forwards; max-width:340px; }
+  .totem-ghost .ic{ color:#7FC79C; }
+  .totem-ghost small{ display:block; color:#9DB3A4; font-size:.74rem; }
+  @keyframes ghostIn{ from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:none;} }
+  @keyframes ghostOut{ to{opacity:0; transform:translateY(8px);} }
+
+  .toast-wrap{ position:fixed; top:72px; right:clamp(16px,4vw,40px); z-index:70; display:flex; flex-direction:column; gap:10px; }
+  .toast{ background:var(--papel); border:1px solid var(--linea); border-left:4px solid var(--jade); border-radius:11px; padding:13px 18px; box-shadow:var(--sombra-alta); font-size:.9rem; color:var(--tinta); max-width:340px; animation:toastIn .35s ease, toastOut .4s ease 3.6s forwards; }
+  .toast.aviso{ border-left-color:var(--laton); }
+  .toast b{ color:var(--verde); }
+  @keyframes toastIn{ from{opacity:0; transform:translateX(20px);} to{opacity:1; transform:none;} }
+  @keyframes toastOut{ to{opacity:0; transform:translateX(20px);} }
+
+  /* Packs */
+  .alta-card{ background:var(--papel); border:1px solid var(--linea); border-radius:var(--radio); box-shadow:var(--sombra); padding:20px; margin-bottom:20px; animation:fundir .3s ease; }
+  .alta-card h3{ font-family:'Playfair Display',serif; font-size:1.2rem; color:var(--verde); font-weight:600; margin-bottom:14px; }
+  .alta-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+  .alta-nota{ font-size:.74rem; color:var(--tinta-suave); margin-top:5px; }
+  .alta-card .acciones{ margin-top:16px; }
+  .packs-lista{ display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
+  .pack-card{ background:var(--papel); border:1px solid var(--linea); border-radius:var(--radio); box-shadow:var(--sombra); padding:18px 20px; }
+  .pack-card.bp{ border-top:3px solid var(--laton); }
+  .pack-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .pack-paciente{ font-family:'Playfair Display',serif; font-size:1.18rem; font-weight:600; color:var(--verde); line-height:1.2; }
+  .pack-head .rut{ font-size:.82rem; color:var(--tinta-suave); margin-top:2px; }
+  .pack-soc{ font-size:.64rem; letter-spacing:.06em; text-transform:uppercase; padding:3px 9px; border-radius:6px; white-space:nowrap; }
+  .pack-soc.skintouch{ background:var(--salvia); color:var(--verde-medio); }
+  .pack-soc.lasertouch{ background:var(--laton-suave); color:var(--laton); }
+  .pack-nombre{ font-size:.84rem; color:var(--tinta-suave); margin:9px 0 14px; }
+  .pack-nombre .bp-tag{ color:var(--laton); font-weight:600; }
+  .saldo-num{ font-size:1.7rem; font-weight:500; color:var(--verde); }
+  .saldo-lbl{ font-size:.78rem; color:var(--tinta-suave); margin-top:1px; }
+  .meter{ height:6px; background:var(--salvia); border-radius:4px; margin-top:9px; overflow:hidden; }
+  .meter span{ display:block; height:100%; background:var(--verde); border-radius:4px; }
+  .pack-acciones{ display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+  .pack-acciones button{ font-family:'Inter',sans-serif; font-size:.82rem; font-weight:500; border:1px solid var(--linea); border-radius:8px; padding:8px 13px; cursor:pointer; background:var(--crema-clara); color:var(--verde-medio); }
+  .pack-acciones button:hover{ border-color:var(--salvia-borde); color:var(--verde); }
+  .hist{ margin-top:16px; border-top:1px solid var(--crema); padding-top:6px; }
+  .mov-row{ display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid var(--crema); }
+  .mov-row:last-child{ border-bottom:none; }
+  .mov-row .g b{ font-size:.88rem; color:var(--verde); font-weight:600; }
+  .mov-row .g small{ display:block; font-size:.74rem; color:var(--tinta-suave); }
+  .mov-row .g .split{ font-size:.72rem; color:var(--verde-medio); margin-top:2px; }
+  .mov-row .mt{ font-family:'Spline Sans Mono',monospace; font-size:.9rem; white-space:nowrap; }
+  .mov-row .mt.carga{ color:var(--jade); }
+  .mov-row .mt.consumo{ color:var(--arcilla); }
+  .reparto{ background:var(--crema-clara); border:1px solid var(--linea); border-radius:var(--radio-sm); padding:11px 14px; margin-top:12px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .reparto .txt{ font-size:.84rem; }
+  .reparto .txt b{ color:var(--verde); }
+  .reparto .txt small{ display:block; color:var(--tinta-suave); font-size:.74rem; margin-top:1px; }
+  .reparto .m{ font-family:'Spline Sans Mono',monospace; color:var(--verde); font-weight:500; white-space:nowrap; }
+
+  .pie{ text-align:center; color:var(--tinta-suave); font-size:.78rem; padding:30px 16px 14px; }
+  .pie .sim{ display:inline-flex; align-items:center; gap:7px; background:var(--laton-suave); color:var(--laton); border-radius:20px; padding:4px 12px; font-weight:500; }
+
+  @media (max-width:680px){
+    .form-grid, .alta-grid{ grid-template-columns:1fr; }
+    .topbar{ flex-wrap:wrap; gap:12px; }
+    .topbar .spacer{ display:none; }
+    .card-top{ flex-wrap:wrap; }
+    .espera{ text-align:left; }
+    .acciones{ flex-wrap:wrap; }
+    .acciones .btn{ flex:1; justify-content:center; }
+    .toast-wrap, .totem-feed{ left:12px; right:12px; }
+    .toast, .totem-ghost{ max-width:none; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="mark">GP</span>
+    <span class="name">Panel de Clarita</span>
+    <span class="sub">Ciclo de Vida</span>
+  </div>
+  <div class="spacer"></div>
+  <div class="live"><span class="dot"></span> En vivo</div>
+  <div class="operador">
+    <label for="op">Atiende</label>
+    <select id="op" aria-label="Operador a cargo">
+      <option value="Clarita">Clarita</option>
+      <option value="Andrea">Andrea</option>
+      <option value="Daniela">Daniela</option>
+    </select>
+  </div>
+</div>
+
+<nav class="tabs" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-panel="cola">Cola en vivo <span class="pill" id="pill-cola">0</span></button>
+  <button class="tab" role="tab" aria-selected="false" data-panel="packs">Packs</button>
+  <button class="tab" role="tab" aria-selected="false" data-panel="traza">Trazabilidad <span class="pill" id="pill-traza">0</span></button>
+</nav>
+
+<main>
+  <section class="panel activo" id="panel-cola" role="tabpanel">
+    <div class="sec-head">
+      <div>
+        <h1>Acciones pendientes</h1>
+        <p class="lede"><span class="conteo" id="lede-conteo">Cargando</span> esperan tu gesto para continuar en el tótem.</p>
+      </div>
+      <div class="filtros" role="group" aria-label="Filtrar cola">
+        <button class="chip" data-filtro="todas" aria-pressed="true">Todas</button>
+        <button class="chip" data-filtro="apoderado" aria-pressed="false">Apoderados</button>
+        <button class="chip" data-filtro="pago" aria-pressed="false">Pagos</button>
+      </div>
+    </div>
+    <div class="cola" id="cola"></div>
+  </section>
+
+  <section class="panel" id="panel-packs" role="tabpanel">
+    <div class="sec-head">
+      <div>
+        <h1>Packs</h1>
+        <p class="lede">Saldos prepagados, alta de nuevos packs e historial de consumo por paciente.</p>
+      </div>
+      <button class="btn btn-primario" id="btn-alta-pack">Dar de alta un pack</button>
+    </div>
+    <div id="alta-pack"></div>
+    <div id="packs-lista"></div>
+  </section>
+
+  <section class="panel" id="panel-traza" role="tabpanel">
+    <div class="sec-head">
+      <div>
+        <h1>Trazabilidad</h1>
+        <p class="lede">Cada acción y autorización queda registrada con quién la ejecutó y a qué hora.</p>
+      </div>
+    </div>
+    <div id="traza-cuerpo"></div>
+  </section>
+</main>
+
+<div class="toast-wrap" id="toasts"></div>
+<div class="totem-feed" id="totem-feed"></div>
+
+<div class="pie"><span class="sim">● Datos demo simulados — Realtime real en Fase 3</span></div>
+
+<script>
+/* ============================================================
+   PARÁMETROS DE NEGOCIO
+   ============================================================ */
+const PCT_DESCUENTO  = 0.05;            // tope que puede solicitarse
+const AUTH_DESCUENTO = 'Dirección clínica'; // 5% — para que seas tú: cambiar por 'Dr. Pantoja'
+const AUTH_CORTESIA  = 'Dr. Pantoja';        // cortesía médica entre colegas
+const RELACIONES = ['Madre','Padre','Tutor(a) legal','Abuelo(a)','Otro'];
+
+/* ============================================================
+   COLA (lo que vendría de v_clarita_pendientes)
+   honorario = línea SkinTouch (ajustable)
+   insumos   = línea LaserTouch (siempre se cobra, bloqueada)
+   ============================================================ */
+let cola = [
+  { id:'act_1001', tipo:'apoderado', rut:'21557882-3', nombre:'Martina Rojas Soto', sesion:'totem_sesiones #84', ctx:'Box 2 · evaluación de lunares', inicio:Date.now()-4*60000 },
+  { id:'act_1002', tipo:'pago', rut:'13402118-9', nombre:'Felipe Cárdenas Lillo', ctx:'Consulta dermatológica + Skin Reset 90', inicio:Date.now()-2*60000, medio:'transferencia', honorario:120000, insumos:95000, ajuste:null },
+  { id:'act_1003', tipo:'apoderado', rut:'22108443-K', nombre:'Tomás Errázuriz Vial', sesion:'totem_sesiones #85', ctx:'Box 1 · control acné', inicio:Date.now()-60000 },
+];
+
+let traza = [];
+let filtroActual = 'todas';
+let nextId = 1100;
+
+/* Utilidades */
+function formatRut(canon){ const [c,dv]=canon.split('-'); const r=c.split('').reverse().join('').replace(/(\d{3})(?=\d)/g,'$1.').split('').reverse().join(''); return r+'-'+dv; }
+function formatCLP(n){ return '$'+n.toLocaleString('es-CL'); }
+function minutos(inicio){ return Math.max(0,Math.floor((Date.now()-inicio)/60000)); }
+function ahora(){ return new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}); }
+function operador(){ return document.getElementById('op').value; }
+
+/* Honorario que se mostrará / cobrará */
+function honorarioMostrado(a){
+  if(a.ajuste && (a.ajuste.estado==='directo'||a.ajuste.estado==='autorizado'||a.ajuste.estado==='pendiente')) return a.ajuste.honorarioAjustado;
+  return a.honorario;
+}
+function honorarioEfectivo(a){
+  if(a.ajuste && (a.ajuste.estado==='directo'||a.ajuste.estado==='autorizado')) return a.ajuste.honorarioAjustado;
+  return a.honorario;
+}
+function bloqueadoPorAuth(a){ return a.ajuste && a.ajuste.estado==='pendiente'; }
+function nBoletas(h,i){ return (h>0?1:0)+(i>0?1:0); }
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(){
+  const cont = document.getElementById('cola');
+  const visibles = cola.filter(a => filtroActual==='todas' || a.tipo===filtroActual);
+  document.getElementById('pill-cola').textContent = cola.length;
+  document.getElementById('lede-conteo').textContent = cola.length===0 ? 'Nadie' : (cola.length===1 ? '1 persona' : cola.length+' personas');
+
+  if(visibles.length===0){
+    cont.innerHTML = `<div class="vacio"><div class="icono serif">·</div><h2>Sin pendientes</h2><p>${cola.length===0 ? 'Todo en orden. Cuando alguien requiera tu gesto, aparecerá aquí.' : 'No hay acciones de este tipo por ahora.'}</p></div>`;
+    return;
+  }
+  visibles.sort((a,b)=> a.inicio-b.inicio);
+  cont.innerHTML = visibles.map(a => a.tipo==='apoderado' ? cardApoderado(a) : cardPago(a)).join('');
+  cablear();
+}
+
+function cardApoderado(a){
+  const m = minutos(a.inicio);
+  return `
+  <article class="card tipo-apoderado" data-id="${a.id}">
+    <div class="card-top">
+      <span class="tipo-tag">Apoderado</span>
+      <div class="ident">
+        <div class="nombre">${a.nombre}</div>
+        <div class="rut mono">${formatRut(a.rut)}</div>
+        <div class="ctx">${a.ctx}</div>
+      </div>
+      <div class="espera ${m>=5?'urgente':''}"><div class="min mono">${m}</div><div class="lbl">min esperando</div></div>
+    </div>
+    <div class="card-body">
+      <div class="menor-info"><span class="ico">◇</span> Paciente menor de edad. Registra al apoderado presente para habilitar la continuación.</div>
+      <div class="form-grid">
+        <div class="campo"><label for="ap-nom-${a.id}">Nombre del apoderado</label><input id="ap-nom-${a.id}" type="text" placeholder="Nombre y apellido" autocomplete="off"></div>
+        <div class="campo"><label for="ap-rut-${a.id}">RUT</label><input id="ap-rut-${a.id}" class="mono" type="text" placeholder="12.345.678-9" autocomplete="off"></div>
+        <div class="campo"><label for="ap-rel-${a.id}">Relación</label><select id="ap-rel-${a.id}"><option value="">Seleccionar</option>${RELACIONES.map(r=>`<option value="${r}">${r}</option>`).join('')}</select></div>
+      </div>
+      <div class="acciones">
+        <button class="btn btn-fantasma" data-omitir="${a.id}">Más tarde</button>
+        <button class="btn btn-primario" data-aprobar="${a.id}" disabled>Aprobar y continuar <span class="flecha">→</span></button>
+      </div>
+    </div>
+  </article>`;
+}
+
+function lineaHonorarioHTML(a){
+  const base = a.honorario;
+  if(a.ajuste && a.ajuste.estado!=='rechazado'){
+    return `<span class="base-tachado mono">${formatCLP(base)}</span><span class="mono">${formatCLP(a.ajuste.honorarioAjustado)}</span>`;
+  }
+  return `<span class="mono">${formatCLP(base)}</span>`;
+}
+
+function ajusteUIHTML(a){
+  if(!a.ajuste){
+    return `
+    <details class="ajuste-box">
+      <summary>Ajustar honorarios</summary>
+      <div class="ajuste-opciones">
+        <button class="opcion-ajuste" data-ajuste="${a.id}" data-motivo="control"><b>Control sin costo</b><small>Honorarios en $0 · lo aplicas tú</small></button>
+        <button class="opcion-ajuste" data-ajuste="${a.id}" data-motivo="descuento5"><b>Descuento 5%</b><small>Solo honorarios · <span class="req">requiere autorización de ${AUTH_DESCUENTO}</span></small></button>
+        <button class="opcion-ajuste" data-ajuste="${a.id}" data-motivo="cortesia"><b>Cortesía médica</b><small>Honorarios en $0, insumos se cobran · <span class="req">requiere aprobación de ${AUTH_CORTESIA}</span></small></button>
+      </div>
+    </details>`;
+  }
+  const aj=a.ajuste, base=a.honorario;
+  if(aj.estado==='directo'){
+    return `<div class="auth-estado aplicado"><div class="txt"><b>${aj.label} aplicado</b><small>Honorarios ${formatCLP(base)} → ${formatCLP(aj.honorarioAjustado)}</small></div><button class="btn-mini quitar" data-quitar="${a.id}">Quitar</button></div>`;
+  }
+  if(aj.estado==='pendiente'){
+    return `<div class="auth-estado pendiente"><div class="txt"><b>Esperando autorización de ${aj.aprobador}</b><small>${aj.label} · honorarios pasarían a ${formatCLP(aj.honorarioAjustado)}</small></div><div class="auth-demo"><span class="demo-lbl">Demo</span><button class="btn-mini si" data-auth-ok="${a.id}">Autorizar</button><button class="btn-mini no" data-auth-no="${a.id}">Rechazar</button><button class="btn-mini quitar" data-quitar="${a.id}">Cancelar</button></div></div>`;
+  }
+  if(aj.estado==='autorizado'){
+    return `<div class="auth-estado aplicado"><div class="txt"><b>${aj.label} · autorizado por ${aj.aprobador}</b><small>Honorarios ${formatCLP(base)} → ${formatCLP(aj.honorarioAjustado)} · ${aj.sello}</small></div><button class="btn-mini quitar" data-quitar="${a.id}">Quitar</button></div>`;
+  }
+  return `<div class="auth-estado rechazado"><div class="txt"><b>${aj.label} · rechazado por ${aj.aprobador}</b><small>Honorarios se mantienen en ${formatCLP(base)}</small></div><button class="btn-mini si" data-reintentar="${a.id}">Solicitar de nuevo</button><button class="btn-mini quitar" data-quitar="${a.id}">Quitar</button></div>`;
+}
+
+function cardPago(a){
+  const m = minutos(a.inicio);
+  const hMostrado = honorarioMostrado(a);
+  const i = a.insumos;
+  const total = hMostrado + i;
+  const esPos = a.medio==='pos';
+  const pend = bloqueadoPorAuth(a);
+
+  let labelBtn, notaBoletas;
+  if(total===0){ labelBtn='Registrar atención sin costo'; notaBoletas='No se emite boleta. Queda constancia en Trazabilidad.'; }
+  else if(nBoletas(hMostrado,i)===2){ labelBtn='Confirmar pago y emitir boletas'; notaBoletas='Se emiten <b>dos boletas</b>: SkinTouch + LaserTouch.'; }
+  else if(hMostrado>0){ labelBtn='Confirmar pago y emitir boleta'; notaBoletas='Se emite <b>una boleta</b>: SkinTouch.'; }
+  else { labelBtn='Confirmar pago y emitir boleta'; notaBoletas='Se emite <b>una boleta</b>: LaserTouch (insumos).'; }
+
+  return `
+  <article class="card tipo-pago" data-id="${a.id}">
+    <div class="card-top">
+      <span class="tipo-tag">Pago</span>
+      <div class="ident">
+        <div class="nombre">${a.nombre}</div>
+        <div class="rut mono">${formatRut(a.rut)}</div>
+        <div class="ctx">${a.ctx}${a.colega?' · <span class="tag-colega">Colega</span>':''}</div>
+      </div>
+      <div class="espera ${m>=5?'urgente':''}"><div class="min mono">${m}</div><div class="lbl">min esperando</div></div>
+    </div>
+    <div class="card-body">
+      <div class="desglose">
+        <div class="linea-soc">
+          <div class="soc"><b>SkinTouch SpA <span class="badge-iva exento">Exento</span></b><small>Honorarios médicos</small></div>
+          <div class="monto">${lineaHonorarioHTML(a)}</div>
+        </div>
+        <div class="linea-soc">
+          <div class="soc"><b>LaserTouch Ltda. <span class="badge-iva afecto">Afecto IVA</span></b><small class="no-ajustable">Insumos y tecnología · no ajustable</small></div>
+          <div class="monto mono">${formatCLP(i)}</div>
+        </div>
+        <div class="linea-total"><span class="lbl">Total a confirmar</span><span class="monto">${formatCLP(total)}${pend?'<span class="sujeto">sujeto a autorización</span>':''}</span></div>
+      </div>
+
+      ${ajusteUIHTML(a)}
+
+      <div class="medio ${esPos?'es-pos':''}" data-medio-wrap="${a.id}">
+        <span class="lbl">Medio recibido:</span>
+        <div class="seg" role="group" aria-label="Medio de pago">
+          <button data-medio="${a.id}" data-val="transferencia" aria-pressed="${!esPos}">Transferencia</button>
+          <button data-medio="${a.id}" data-val="pos" aria-pressed="${esPos}">POS físico</button>
+        </div>
+        <span class="nota-pos">2 terminales · uno por sociedad</span>
+      </div>
+      <p class="boletas-nota">${notaBoletas}</p>
+
+      <div class="acciones">
+        <button class="btn btn-fantasma" data-omitir="${a.id}">Más tarde</button>
+        <button class="btn btn-primario" data-pagar="${a.id}" ${pend?'disabled':''}>${pend?'Esperando autorización…':labelBtn} ${pend?'':'<span class="flecha">→</span>'}</button>
+      </div>
+    </div>
+  </article>`;
+}
+
+/* ============================================================
+   INTERACCIONES
+   ============================================================ */
+function cablear(){
+  document.querySelectorAll('.card.tipo-apoderado').forEach(card=>{
+    const id=card.dataset.id;
+    const nom=card.querySelector(`#ap-nom-${id}`), rut=card.querySelector(`#ap-rut-${id}`), rel=card.querySelector(`#ap-rel-${id}`);
+    const btn=card.querySelector(`[data-aprobar="${id}"]`);
+    const chequear=()=>{ btn.disabled = !(nom.value.trim() && rut.value.trim() && rel.value); };
+    [nom,rut,rel].forEach(el=> el.addEventListener('input',chequear));
+  });
+
+  document.querySelectorAll('[data-medio]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const id=b.dataset.medio, val=b.dataset.val;
+      const a=cola.find(x=>x.id===id); if(a) a.medio=val;
+      const wrap=document.querySelector(`[data-medio-wrap="${id}"]`);
+      wrap.querySelectorAll('[data-medio]').forEach(x=> x.setAttribute('aria-pressed', x.dataset.val===val));
+      wrap.classList.toggle('es-pos', val==='pos');
+    });
+  });
+
+  document.querySelectorAll('[data-ajuste]').forEach(b=> b.addEventListener('click',()=> aplicarAjuste(b.dataset.ajuste, b.dataset.motivo)));
+  document.querySelectorAll('[data-auth-ok]').forEach(b=> b.addEventListener('click',()=> responderAuth(b.dataset.authOk, true)));
+  document.querySelectorAll('[data-auth-no]').forEach(b=> b.addEventListener('click',()=> responderAuth(b.dataset.authNo, false)));
+  document.querySelectorAll('[data-quitar]').forEach(b=> b.addEventListener('click',()=> quitarAjuste(b.dataset.quitar)));
+  document.querySelectorAll('[data-reintentar]').forEach(b=> b.addEventListener('click',()=>{ const a=cola.find(x=>x.id===b.dataset.reintentar); if(a&&a.ajuste) aplicarAjuste(a.id, a.ajuste.motivo); }));
+
+  document.querySelectorAll('[data-aprobar]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const id=b.dataset.aprobar; const a=cola.find(x=>x.id===id);
+      const nom=document.getElementById(`ap-nom-${id}`).value.trim();
+      const rel=document.getElementById(`ap-rel-${id}`).value;
+      resolver(id,'apoderado',{ resumen:`Apoderado aprobado para <b>${a.nombre}</b>`, sub:`${rel}: ${nom}`, quien:operador(), toast:`Apoderado aprobado. <b>${a.nombre}</b> continúa en el tótem.`, totem:{nombre:a.nombre, paso:'Continúa la atención (datos del menor habilitados)'} });
+    });
+  });
+
+  document.querySelectorAll('[data-pagar]').forEach(b=> b.addEventListener('click',()=> confirmarPago(b.dataset.pagar)));
+
+  document.querySelectorAll('[data-omitir]').forEach(b=> b.addEventListener('click',()=> toast('Acción mantenida en cola.','aviso')));
+}
+
+/* Ajustes de honorarios */
+function aplicarAjuste(id, motivo){
+  const a=cola.find(x=>x.id===id); if(!a) return;
+  if(motivo==='control')        a.ajuste={ motivo, label:'Control sin costo', honorarioAjustado:0, estado:'directo', aprobador:null };
+  else if(motivo==='descuento5') a.ajuste={ motivo, label:'Descuento 5%', honorarioAjustado:Math.round(a.honorario*(1-PCT_DESCUENTO)), estado:'pendiente', aprobador:AUTH_DESCUENTO };
+  else if(motivo==='cortesia')   a.ajuste={ motivo, label:'Cortesía médica', honorarioAjustado:0, estado:'pendiente', aprobador:AUTH_CORTESIA };
+  render();
+}
+function quitarAjuste(id){ const a=cola.find(x=>x.id===id); if(a) a.ajuste=null; render(); }
+function responderAuth(id, ok){
+  const a=cola.find(x=>x.id===id); if(!a||!a.ajuste) return;
+  const aj=a.ajuste; aj.estado = ok?'autorizado':'rechazado'; aj.sello=ahora();
+  traza.unshift({ tipo:'ajuste',
+    resumen: ok ? `${aj.label} autorizado · <b>${a.nombre}</b>` : `${aj.label} rechazado · <b>${a.nombre}</b>`,
+    sub: ok ? `Honorarios ${formatCLP(a.honorario)} → ${formatCLP(aj.honorarioAjustado)}` : `Honorarios se mantienen en ${formatCLP(a.honorario)}`,
+    quien: aj.aprobador, cuando: aj.sello });
+  renderTraza();
+  toast(ok?`${aj.label} autorizado por ${aj.aprobador}.`:`${aj.label} rechazado. Honorarios se mantienen.`,'aviso');
+  render();
+}
+
+/* Confirmar pago */
+function confirmarPago(id){
+  const a=cola.find(x=>x.id===id); if(!a||bloqueadoPorAuth(a)) return;
+  const h=honorarioEfectivo(a), i=a.insumos, total=h+i;
+  const medioTxt = a.medio==='pos' ? 'POS físico' : 'Transferencia';
+  const motivoTxt = (a.ajuste && a.ajuste.estado!=='rechazado') ? ` · ${a.ajuste.label}` : '';
+  let resumen, sub, toastTxt, paso;
+  if(total===0){
+    resumen=`Atención sin costo · <b>${a.nombre}</b>`;
+    sub=`${a.ajuste?a.ajuste.label:'Sin cargo'} · no se emite boleta`;
+    toastTxt=`Atención registrada sin costo — <b>${a.nombre}</b> avanza a confirmación.`;
+    paso='Avanza a confirmación (sin costo)';
+  } else {
+    const n=nBoletas(h,i);
+    const docs = n===2 ? '2 boletas (SkinTouch + LaserTouch)' : (h>0 ? '1 boleta (SkinTouch)' : '1 boleta (LaserTouch)');
+    resumen=`Pago confirmado de <b>${a.nombre}</b> · ${formatCLP(total)}`;
+    sub=`${medioTxt} · ${docs}${motivoTxt}`;
+    toastTxt=`Pago confirmado. ${n===2?'Boletas emitidas':'Boleta emitida'} — <b>${a.nombre}</b> avanza a confirmación.`;
+    paso='Avanza a la pantalla de confirmación';
+  }
+  resolver(id,'pago',{ resumen, sub, quien:operador(), toast:toastTxt, totem:{nombre:a.nombre, paso} });
+}
+
+/* Resolver: registra, anima salida, avanza tótem */
+function resolver(id, tipo, info){
+  const card=document.querySelector(`.card[data-id="${id}"]`);
+  if(card) card.classList.add('saliendo');
+  traza.unshift({ tipo, resumen:info.resumen, sub:info.sub, quien:info.quien||operador(), cuando:ahora() });
+  renderTraza();
+  setTimeout(()=>{ cola=cola.filter(x=>x.id!==id); render(); toast(info.toast); totemGhost(info.totem); }, 380);
+}
+
+/* Trazabilidad */
+function renderTraza(){
+  document.getElementById('pill-traza').textContent = traza.length;
+  const c=document.getElementById('traza-cuerpo');
+  if(traza.length===0){ c.innerHTML=`<div class="vacio"><div class="icono serif">·</div><h2>Sin registros aún</h2><p>A medida que resuelvas acciones o se autoricen ajustes, quedarán aquí con su sello de quién y cuándo.</p></div>`; return; }
+  c.innerHTML=`<div class="log">${traza.map(r=>`
+    <div class="log-row t-${r.tipo}"><span class="punto"></span>
+      <div class="detalle"><div>${r.resumen}</div><div class="sub">${r.sub}</div></div>
+      <div class="sello"><div class="quien">${r.quien}</div><div class="cuando mono">${r.cuando}</div></div>
+    </div>`).join('')}</div>`;
+}
+
+/* Toast / Tótem fantasma */
+function toast(html, clase=''){ const w=document.getElementById('toasts'); const el=document.createElement('div'); el.className='toast '+clase; el.innerHTML=html; w.appendChild(el); setTimeout(()=>el.remove(),4200); }
+function totemGhost(info){ const f=document.getElementById('totem-feed'); const el=document.createElement('div'); el.className='totem-ghost'; el.innerHTML=`<span class="ic">↦</span><div>Tótem · <b>${info.nombre}</b><small>${info.paso}</small></div>`; f.appendChild(el); setTimeout(()=>el.remove(),4200); }
+
+/* ============================================================
+   MOTOR REALTIME (simulado) — Fase 3: supabase.channel('clarita')
+   ============================================================ */
+const ENTRANTES = [
+  { tipo:'apoderado', rut:'23744901-5', nombre:'Amparo Ríos Donoso', sesion:'totem_sesiones #86', ctx:'Box 3 · control dermatitis' },
+  { tipo:'pago', rut:'16930512-4', nombre:'Joaquín Bravo Pinto', ctx:'Control post-láser', medio:'transferencia', honorario:35000, insumos:0, ajuste:null },
+  { tipo:'pago', rut:'12876344-1', nombre:'Dra. Carolina Méndez Ruiz', ctx:'Consulta + crioterapia', medio:'transferencia', honorario:90000, insumos:40000, colega:true, ajuste:null },
+  { tipo:'pago', rut:'10288457-6', nombre:'Renata Valdés Iturra', ctx:'Láser CO2 fraccionado', medio:'pos', honorario:80000, insumos:260000, ajuste:null },
+];
+let idxEntrante=0;
+function inyectar(){
+  if(idxEntrante>=ENTRANTES.length) return;
+  const base=ENTRANTES[idxEntrante++];
+  const nueva=Object.assign({ id:'act_'+(nextId++), inicio:Date.now() }, base);
+  cola.push(nueva); render();
+  requestAnimationFrame(()=>{ const el=document.querySelector(`.card[data-id="${nueva.id}"]`); if(el && filtroActual==='todas') el.classList.add('entrando'); });
+  toast(`Nueva acción en cola · <b>${nueva.nombre}</b>`,'aviso');
+}
+
+/* ============================================================
+   PACKS (monedero prepagado) — tablas packs / pack_movimientos
+   Saldo vive en empresa_anticipo; cada consumo guarda el desglose
+   honorario/insumos para el reparto inter-empresa.
+   ============================================================ */
+let packs = [
+  { id:'pk_01', rut:'15234876-2', nombre:'Isidora Fuentes Carmona', pack:'Pack Skin Reset', cargado:800000, empresa:'SkinTouch', medio:'Link de pago', doc:'Anticipo', alta:'12 may 2026', blueprint:false },
+  { id:'pk_02', rut:'9871234-5', nombre:'Ricardo Larraín Vicuña', pack:'Plan Anual Blueprint', cargado:1500000, empresa:'LaserTouch', medio:'Tarjeta', doc:'Anticipo', alta:'3 jun 2026', blueprint:true },
+];
+let movimientos = [
+  { pack:'pk_01', tipo:'carga', glosa:'Carga inicial · Link de pago', monto:800000, fecha:'12 may 2026' },
+  { pack:'pk_01', tipo:'consumo', glosa:'Sesión láser facial', honorario:40000, insumos:90000, fecha:'20 may 2026' },
+  { pack:'pk_01', tipo:'consumo', glosa:'Consulta de control', honorario:50000, insumos:0, fecha:'2 jun 2026' },
+  { pack:'pk_02', tipo:'carga', glosa:'Carga inicial · Tarjeta', monto:1500000, fecha:'3 jun 2026' },
+];
+let nextPack = 100;
+
+function hoyTxt(){ return new Date().toLocaleDateString('es-CL',{day:'numeric',month:'short'}).replace('.',''); }
+function rutDisplay(r){ return /^\d{7,8}-[\dkK]$/.test(r) ? formatRut(r) : r; }
+function consumosDe(id){ return movimientos.filter(m=>m.pack===id && m.tipo==='consumo'); }
+function saldoPack(p){ const c=consumosDe(p.id).reduce((s,m)=>s+(m.honorario||0)+(m.insumos||0),0); return p.cargado-c; }
+function reparto(p){
+  const cs=consumosDe(p.id);
+  if(p.empresa==='SkinTouch'){ return { from:'SkinTouch', to:'LaserTouch', monto:cs.reduce((s,m)=>s+(m.insumos||0),0), glosa:'insumos consumidos desde caja SkinTouch' }; }
+  return { from:'LaserTouch', to:'SkinTouch', monto:cs.reduce((s,m)=>s+(m.honorario||0),0), glosa:'honorarios consumidos desde caja LaserTouch' };
+}
+
+function packCardHTML(p){
+  const saldo=saldoPack(p), pct=Math.max(0,Math.round(saldo/p.cargado*100));
+  const socCls = p.empresa==='SkinTouch'?'skintouch':'lasertouch';
+  return `
+  <article class="pack-card ${p.blueprint?'bp':''}">
+    <div class="pack-head">
+      <div>
+        <div class="pack-paciente">${p.nombre}</div>
+        <div class="rut mono">${rutDisplay(p.rut)}</div>
+      </div>
+      <span class="pack-soc ${socCls}">${p.empresa}</span>
+    </div>
+    <div class="pack-nombre">${p.blueprint?'<span class="bp-tag">Blueprint</span> · ':''}${p.pack} · alta ${p.alta} · ${p.doc}</div>
+    <div class="saldo-num mono">${formatCLP(saldo)}</div>
+    <div class="saldo-lbl">saldo vigente de ${formatCLP(p.cargado)} cargados</div>
+    <div class="meter"><span style="width:${pct}%"></span></div>
+    <div class="pack-acciones">
+      <button data-hist="${p.id}">Ver historial</button>
+      <button data-consumo="${p.id}">Registrar consumo (demo)</button>
+    </div>
+    <div class="hist" id="hist-${p.id}" hidden>${histHTML(p)}</div>
+  </article>`;
+}
+
+function histHTML(p){
+  const movs = movimientos.filter(m=>m.pack===p.id);
+  const filas = movs.map(m=>{
+    if(m.tipo==='carga'){
+      return `<div class="mov-row"><div class="g"><b>${m.glosa}</b><small>${m.fecha}</small></div><div class="mt carga mono">+${formatCLP(m.monto)}</div></div>`;
+    }
+    const t=(m.honorario||0)+(m.insumos||0);
+    return `<div class="mov-row"><div class="g"><b>${m.glosa}</b><small>${m.fecha}</small><span class="split">SkinTouch ${formatCLP(m.honorario||0)} · LaserTouch ${formatCLP(m.insumos||0)}</span></div><div class="mt consumo mono">−${formatCLP(t)}</div></div>`;
+  }).join('');
+  const r=reparto(p);
+  const repHTML = `<div class="reparto"><div class="txt"><b>Reparto inter-empresa pendiente · ${r.from} → ${r.to}</b><small>${r.glosa}</small></div><div class="m">${formatCLP(r.monto)}</div></div>`;
+  return filas + repHTML;
+}
+
+function renderPacks(){
+  const cont=document.getElementById('packs-lista');
+  if(packs.length===0){ cont.className=''; cont.innerHTML=`<div class="vacio"><div class="icono serif">·</div><h2>Sin packs activos</h2><p>Cuando des de alta un pack, aparecerá aquí con su saldo e historial.</p></div>`; return; }
+  cont.className='packs-lista';
+  cont.innerHTML=packs.map(packCardHTML).join('');
+  cont.querySelectorAll('[data-hist]').forEach(b=> b.addEventListener('click',()=>{ const h=document.getElementById('hist-'+b.dataset.hist); h.hidden=!h.hidden; b.textContent=h.hidden?'Ver historial':'Ocultar historial'; }));
+  cont.querySelectorAll('[data-consumo]').forEach(b=> b.addEventListener('click',()=> registrarConsumo(b.dataset.consumo)));
+}
+
+function registrarConsumo(id){
+  const p=packs.find(x=>x.id===id); if(!p) return;
+  const h=35000, i=25000, t=h+i;
+  if(saldoPack(p)<t){ toast('Saldo insuficiente en el pack.','aviso'); return; }
+  movimientos.push({ pack:id, tipo:'consumo', glosa:'Sesión de seguimiento (demo)', honorario:h, insumos:i, fecha:hoyTxt() });
+  traza.unshift({ tipo:'pack', resumen:`Consumo de pack · <b>${p.nombre}</b>`, sub:`${formatCLP(t)} descontado del saldo · SkinTouch ${formatCLP(h)} / LaserTouch ${formatCLP(i)}`, quien:operador(), cuando:ahora() });
+  renderTraza(); renderPacks();
+  toast(`Consumo registrado. Saldo de <b>${p.nombre}</b>: ${formatCLP(saldoPack(p))}.`);
+}
+
+function mostrarAlta(){
+  const box=document.getElementById('alta-pack');
+  if(box.innerHTML.trim()){ box.innerHTML=''; return; }
+  box.innerHTML=`
+  <div class="alta-card">
+    <h3>Dar de alta un pack</h3>
+    <div class="alta-grid">
+      <div class="campo"><label for="alta-nombre">Nombre del paciente</label><input id="alta-nombre" type="text" placeholder="Nombre y apellido" autocomplete="off"></div>
+      <div class="campo"><label for="alta-rut">RUT</label><input id="alta-rut" class="mono" type="text" placeholder="12345678-9" autocomplete="off"></div>
+      <div class="campo"><label for="alta-pack-nom">Nombre del pack</label><input id="alta-pack-nom" type="text" placeholder="Pack Skin Reset" autocomplete="off"></div>
+      <div class="campo"><label for="alta-monto">Monto a cargar (CLP)</label><input id="alta-monto" class="mono" type="number" placeholder="800000" autocomplete="off"></div>
+      <div class="campo"><label for="alta-medio">Medio de compra</label><select id="alta-medio"><option>Link de pago</option><option>Tarjeta</option><option>Mercado Pago</option></select></div>
+      <div class="campo"><label for="alta-empresa">Sociedad que recibe la caja</label><select id="alta-empresa"><option>SkinTouch</option><option>LaserTouch</option></select></div>
+    </div>
+    <div class="campo" style="margin-top:12px; max-width:320px"><label for="alta-doc">Documento al comprar</label><select id="alta-doc"><option>Anticipo (boleta al consumo)</option><option>Boleta al comprar</option></select></div>
+    <p class="alta-nota">La sociedad elegida define hacia dónde corre el reparto inter-empresa a medida que el pack se consume.</p>
+    <div class="acciones">
+      <button class="btn btn-fantasma" id="alta-cancelar">Cancelar</button>
+      <button class="btn btn-primario" id="alta-guardar">Dar de alta <span class="flecha">→</span></button>
+    </div>
+  </div>`;
+  document.getElementById('alta-cancelar').addEventListener('click',()=> box.innerHTML='');
+  document.getElementById('alta-guardar').addEventListener('click', guardarPack);
+}
+
+function guardarPack(){
+  const g=id=>document.getElementById(id);
+  const nombre=g('alta-nombre').value.trim(), rut=g('alta-rut').value.trim(), packn=g('alta-pack-nom').value.trim()||'Pack', monto=parseInt(g('alta-monto').value,10)||0, medio=g('alta-medio').value, empresa=g('alta-empresa').value, doc=g('alta-doc').value;
+  if(!nombre||!rut||monto<=0){ toast('Completa nombre, RUT y un monto válido.','aviso'); return; }
+  const id='pk_'+(nextPack++);
+  const docCorto = doc.startsWith('Anticipo')?'Anticipo':'Boleta al comprar';
+  packs.unshift({ id, rut, nombre, pack:packn, cargado:monto, empresa, medio, doc:docCorto, alta:hoyTxt(), blueprint:false });
+  movimientos.push({ pack:id, tipo:'carga', glosa:'Carga inicial · '+medio, monto, fecha:hoyTxt() });
+  traza.unshift({ tipo:'pack', resumen:`Pack dado de alta · <b>${nombre}</b>`, sub:`${formatCLP(monto)} en ${empresa} · ${medio} · ${docCorto}`, quien:operador(), cuando:ahora() });
+  renderTraza(); renderPacks();
+  document.getElementById('alta-pack').innerHTML='';
+  toast(`Pack creado para <b>${nombre}</b> · saldo ${formatCLP(monto)}.`);
+}
+
+
+document.querySelectorAll('.tab').forEach(t=> t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=> x.setAttribute('aria-selected','false'));
+  t.setAttribute('aria-selected','true');
+  document.querySelectorAll('.panel').forEach(p=> p.classList.remove('activo'));
+  document.getElementById('panel-'+t.dataset.panel).classList.add('activo');
+}));
+document.querySelectorAll('.chip').forEach(c=> c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip').forEach(x=> x.setAttribute('aria-pressed','false'));
+  c.setAttribute('aria-pressed','true'); filtroActual=c.dataset.filtro; render();
+}));
+
+document.getElementById('btn-alta-pack').addEventListener('click', mostrarAlta);
+
+render(); renderTraza(); renderPacks();
+setInterval(()=>{ const ae=document.activeElement; if(!ae || (ae.tagName!=='INPUT' && ae.tagName!=='SELECT' && ae.tagName!=='SUMMARY')) render(); }, 25000);
+setTimeout(inyectar, 9000); setTimeout(inyectar, 24000); setTimeout(inyectar, 40000); setTimeout(inyectar, 58000);
+</script>
+</body>
+</html>
