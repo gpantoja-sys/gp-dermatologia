@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autorizaciones · GP Dermatología</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --crema:#f4efe7; --crema2:#fbf8f2; --verde:#1f3d34; --verde2:#2c5446;
+    --tinta:#26201a; --suave:#8a8076; --linea:#e3dccf;
+    --ok:#2f7d5b; --mal:#b23b3b; --esp:#b8860b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--crema);color:var(--tinta);
+    font-family:'Inter',system-ui,sans-serif;line-height:1.5;padding:20px}
+  .wrap{max-width:780px;margin:0 auto}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  h1{font-family:'Playfair Display',serif;font-weight:600;color:var(--verde);font-size:26px;margin:0}
+  .sub{color:var(--suave);font-size:14px;margin:0 0 16px}
+  .estado{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--suave);font-family:ui-monospace,monospace}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--suave)}
+  .dot.ok{background:var(--ok)} .dot.mal{background:var(--mal)} .dot.esp{background:var(--esp)}
+
+  .personas{display:flex;gap:8px;margin-bottom:16px}
+  .personas button{flex:1;background:#fff;color:var(--verde);border:1px solid var(--linea);font-weight:500}
+  .personas button.active{background:var(--verde);color:#fff;border-color:var(--verde)}
+
+  button{font-family:inherit;font-size:14px;font-weight:600;border-radius:10px;
+    padding:9px 15px;border:1px solid var(--verde);background:var(--verde);color:#fff;cursor:pointer;transition:.15s}
+  button:hover{background:var(--verde2)}
+  button.ghost{background:transparent;color:var(--verde)}
+  button.ghost:hover{background:rgba(31,61,52,.06)}
+  button.mini{font-size:12.5px;padding:7px 11px;border-radius:9px}
+  button.danger{border-color:var(--mal);color:var(--mal);background:transparent}
+  button.danger:hover{background:rgba(178,59,59,.07)}
+
+  .card{background:var(--crema2);border:1px solid var(--linea);border-radius:16px;
+    padding:18px 20px;margin-bottom:14px}
+  .card.vencida{opacity:.55}
+  .chead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .tag{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px}
+  .tag.desc{background:#f3ecdd;color:#7a5a13}
+  .tag.cort{background:#eaf1ec;color:var(--verde)}
+  .cname{font-family:'Playfair Display',serif;font-size:19px;color:var(--tinta);font-weight:600}
+  .crut{font-family:ui-monospace,monospace;font-size:12.5px;color:var(--suave);margin-left:auto}
+  .nota{font-size:14px;color:var(--tinta);background:#f6f1e8;border-radius:9px;padding:9px 12px;margin:8px 0 12px}
+  .nota span{color:var(--suave);font-size:12px;display:block;margin-bottom:2px}
+
+  .hon{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;font-family:ui-monospace,monospace}
+  .hon .base{color:var(--suave);text-decoration:line-through;font-size:14px}
+  .hon .arrow{color:var(--suave)}
+  .hon .aj{font-size:20px;font-weight:600;color:var(--verde)}
+  .hon .delta{font-size:12.5px;color:var(--mal);font-family:'Inter'}
+
+  .timer{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:13px}
+  .timer .clock{font-family:ui-monospace,monospace;font-weight:600;font-size:15px}
+  .timer.ok .clock{color:var(--ok)} .timer.warn .clock{color:var(--esp)} .timer.crit .clock{color:var(--mal)}
+  .timer .lbl{color:var(--suave)}
+
+  .acc{display:flex;gap:10px}
+  .acc button{flex:1}
+
+  .vacio{text-align:center;color:var(--suave);padding:48px 20px;font-family:'Playfair Display',serif;font-size:19px}
+  .vacio small{display:block;font-family:'Inter';font-size:13px;margin-top:6px}
+
+  details.debug{margin-top:24px;border-top:1px solid var(--linea);padding-top:14px}
+  details.debug summary{cursor:pointer;color:var(--suave);font-size:13px}
+  .dbtns{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  #log{font-family:ui-monospace,monospace;font-size:12px;background:#fffdf9;border:1px solid var(--linea);
+    border-radius:10px;padding:11px;max-height:180px;overflow:auto;white-space:pre-wrap}
+  .l-ok{color:var(--ok)} .l-mal{color:var(--mal)} .l-rt{color:var(--verde2);font-weight:600} .l-dim{color:var(--suave)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Autorizaciones</h1>
+    <div class="estado"><span class="dot" id="rtDot"></span><span id="rtTxt">conectando…</span></div>
+  </div>
+  <p class="sub" id="subt">Bandeja de aprobación</p>
+
+  <div class="personas">
+    <button id="p-and" class="active" onclick="setPersona('Andrea')">Andrea · Descuentos</button>
+    <button id="p-dir" onclick="setPersona('Dirección')">Dirección · Cortesías</button>
+  </div>
+
+  <div id="bandeja"></div>
+
+  <details class="debug">
+    <summary>Herramientas de prueba</summary>
+    <div class="dbtns">
+      <button class="ghost mini" onclick="pruebaDescuento()">+ Descuento 5% (Andrea)</button>
+      <button class="ghost mini" onclick="pruebaCortesia()">+ Cortesía (Dirección)</button>
+      <button class="ghost mini" onclick="pruebaCorta()">+ Descuento corto (30s)</button>
+      <button class="danger mini" onclick="limpiarPrueba()">Limpiar pruebas</button>
+    </div>
+    <div id="log"></div>
+  </details>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://nirxkzkfcctdigvuapuc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pcnhremtmY2N0ZGlndnVhcHVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDY5MTUsImV4cCI6MjA5NTEyMjkxNX0.iGTkHTRgdsEDoUsvS9ApQtSRAJV52z-_IASlFBmPqDM';
+
+const RUT_PRUEBA = '0-0';
+
+// --- WhatsApp (Whaticket vía tu proxy de Vercel) ---
+const WA_PROXY = '/api/whaticket';      // ← AJUSTA al nombre real de tu archivo en api/ (ej. /api/whaticket)
+const APROBADOR_TEL = '56998266918';    // tu número para la prueba; luego el de Andrea
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = id => document.getElementById(id);
+const fmt = n => '$' + (n||0).toLocaleString('es-CL');
+function log(m,c){ const d=$('log'); const t=new Date().toLocaleTimeString('es-CL');
+  const s=document.createElement('div'); if(c)s.className=c; s.textContent=`[${t}] ${m}`;
+  d.appendChild(s); d.scrollTop=d.scrollHeight; }
+
+let PERSONA = 'Andrea';                 // Andrea=descuentos · Dirección=cortesías
+let BANDEJA = [];
+const expirados = new Set();            // ids ya auto-rechazados
+
+const tipoDePersona = p => p==='Andrea' ? 'ajuste_descuento' : 'ajuste_cortesia';
+
+function setPersona(p){
+  PERSONA = p;
+  $('p-and').classList.toggle('active', p==='Andrea');
+  $('p-dir').classList.toggle('active', p==='Dirección');
+  $('subt').textContent = p==='Andrea' ? 'Andrea · aprueba descuentos de 5%' : 'Dirección · aprueba cortesías médicas';
+  render();
+}
+
+async function cargar(){
+  const { data, error } = await sb.from('v_autorizaciones_pendientes').select('*');
+  if(error){ log('bandeja → '+error.message,'l-mal'); return; }
+  BANDEJA = data || [];
+  render();
+}
+
+function nombrePac(r){
+  const n=[r.nombre,r.apellido].filter(Boolean).join(' ').trim();
+  return n || (r.detalle&&r.detalle.nombre) || r.paciente_rut || 'Paciente';
+}
+
+function render(){
+  const cont=$('bandeja'); cont.innerHTML='';
+  const mias = BANDEJA.filter(r=>r.tipo===tipoDePersona(PERSONA));
+  if(!mias.length){
+    cont.innerHTML='<div class="vacio">Sin solicitudes<small>Nada pendiente de tu aprobación</small></div>';
+    return;
+  }
+  mias.forEach(r=>cont.insertAdjacentHTML('beforeend', card(r)));
+  tick(); // pinta los timers de inmediato
+}
+
+function card(r){
+  const desc = r.tipo==='ajuste_descuento';
+  const base=r.honorario_base||0, aj=(r.honorario_ajustado??0);
+  const delta=base-aj;
+  return `<div class="card" id="card-${r.id}">
+    <div class="chead">
+      <span class="tag ${desc?'desc':'cort'}">${desc?'Descuento 5%':'Cortesía médica'}</span>
+      <span class="cname">${nombrePac(r)}</span>
+      <span class="crut">${r.paciente_rut||''}</span>
+    </div>
+    <div class="nota"><span>Nota de Clarita</span>${r.motivo||'—'}</div>
+    <div class="hon">
+      <span class="base">${fmt(base)}</span><span class="arrow">→</span>
+      <span class="aj">${fmt(aj)}</span>
+      <span class="delta">${delta>0?('−'+fmt(delta)):''}</span>
+    </div>
+    <div class="timer ok" id="timer-${r.id}"><span class="clock" id="t-${r.id}">--:--</span>
+      <span class="lbl">para responder</span></div>
+    <div class="acc">
+      <button onclick="aprobar(${r.id})">Aprobar</button>
+      <button class="danger" onclick="rechazar(${r.id})">Rechazar</button>
+    </div>
+  </div>`;
+}
+
+// ---- cuenta regresiva en vivo ----
+function tick(){
+  const ahora = Date.now();
+  BANDEJA.forEach(r=>{
+    const ms = new Date(r.vence_at).getTime() - ahora;
+    const seg = Math.max(0, Math.floor(ms/1000));
+    const el = $('t-'+r.id), tw = $('timer-'+r.id);
+    if(el){
+      const mm=String(Math.floor(seg/60)).padStart(2,'0'), ss=String(seg%60).padStart(2,'0');
+      el.textContent = `${mm}:${ss}`;
+      if(tw){ tw.className = 'timer ' + (seg<=30?'crit':seg<=120?'warn':'ok'); }
+    }
+    if(seg<=0 && !expirados.has(r.id)){
+      expirados.add(r.id);
+      autoRechazar(r.id);
+    }
+  });
+}
+setInterval(tick, 1000);
+
+// ---- resolver ----
+async function aprobar(id){
+  const { error } = await sb.from('clarita_acciones').update({
+    estado:'aprobado', canal:'panel', resuelto_por:PERSONA, resuelto_en:new Date().toISOString() }).eq('id', id);
+  if(error){ log('aprobar → '+error.message,'l-mal'); alert('Error: '+error.message); return; }
+  log(`Aprobado · acción ${id} · ${PERSONA}`,'l-ok'); cargar();
+}
+async function rechazar(id){
+  if(!confirm('¿Rechazar esta solicitud?')) return;
+  const row = BANDEJA.find(x=>x.id===id)||{};
+  const detalle = Object.assign({}, row.detalle||{}, { motivo_rechazo:'manual' });
+  const { error } = await sb.from('clarita_acciones').update({
+    estado:'rechazado', canal:'panel', resuelto_por:PERSONA, resuelto_en:new Date().toISOString(), detalle }).eq('id', id);
+  if(error){ log('rechazar → '+error.message,'l-mal'); return; }
+  log(`Rechazado · acción ${id} · ${PERSONA}`,'l-dim'); cargar();
+}
+async function autoRechazar(id){
+  const row = BANDEJA.find(x=>x.id===id)||{};
+  const detalle = Object.assign({}, row.detalle||{}, { motivo_rechazo:'tiempo' });
+  const { error } = await sb.from('clarita_acciones').update({
+    estado:'rechazado', canal:'automatico', resuelto_por:'Sistema', resuelto_en:new Date().toISOString(), detalle }).eq('id', id);
+  if(!error) log(`Vencida · acción ${id} · auto-rechazada`,'l-dim');
+  cargar();
+}
+
+// ---- pruebas ----
+async function enviarWhatsApp(numero, mensaje, nombre){
+  try{
+    const r = await fetch(WA_PROXY, { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ number:numero, body:mensaje, name:nombre||'' }) });
+    const d = await r.json().catch(()=>({}));
+    if(r.ok && d.ok){ log('WhatsApp enviado a '+numero,'l-ok'); }
+    else { log('WhatsApp → '+(d.error||('HTTP '+r.status)),'l-mal'); }
+  }catch(e){ log('WhatsApp → '+e.message,'l-mal'); }
+}
+
+async function insertarAjuste(tipo, detalle, venceSeg){
+  const fila = { paciente_rut:RUT_PRUEBA, tipo, estado:'pendiente', canal:'whatsapp', detalle };
+  if(venceSeg) fila.vence_at = new Date(Date.now()+venceSeg*1000).toISOString();
+  const { error } = await sb.from('clarita_acciones').insert(fila);
+  if(error){ log('prueba → '+error.message,'l-mal'); return; }
+  log('Solicitud de prueba insertada.','l-ok');
+  // notificación real al aprobador
+  const etiqueta = tipo==='ajuste_descuento' ? 'descuento 5%' : 'cortesía médica';
+  const msg = `GP Dermatología · Nueva solicitud de ${etiqueta} para ${detalle.nombre||'un paciente'}. `
+            + `Apruébala en el panel: gp-dermatologia.vercel.app/gp-bandeja.html`;
+  enviarWhatsApp(APROBADOR_TEL, msg, detalle.aprobador_rol);
+}
+const pruebaDescuento = ()=> insertarAjuste('ajuste_descuento',
+  { nombre:'PACIENTE PRUEBA', aprobador_rol:'Andrea', motivo:'Paciente frecuente · descuento 5%', honorario_base:95000, honorario_ajustado:90250 });
+const pruebaCortesia = ()=> insertarAjuste('ajuste_cortesia',
+  { nombre:'PACIENTE PRUEBA', aprobador_rol:'Dirección', motivo:'Cortesía médica · colega', honorario_base:95000, honorario_ajustado:0 });
+const pruebaCorta = ()=> insertarAjuste('ajuste_descuento',
+  { nombre:'PRUEBA VENCE', aprobador_rol:'Andrea', motivo:'Descuento corto · prueba de vencimiento', honorario_base:95000, honorario_ajustado:90250 }, 30);
+async function limpiarPrueba(){
+  const { error } = await sb.from('clarita_acciones').delete().eq('paciente_rut', RUT_PRUEBA);
+  log(error?('limpiar → '+error.message):'Pruebas eliminadas.', error?'l-mal':'l-ok');
+}
+
+// ---- Realtime ----
+function suscribir(){
+  $('rtDot').className='dot esp'; $('rtTxt').textContent='suscribiendo…';
+  sb.channel('bandeja-andrea')
+    .on('postgres_changes',{ event:'*', schema:'public', table:'clarita_acciones' },
+      p=>{ log('◆ Realtime '+p.eventType,'l-rt'); cargar(); })
+    .subscribe(st=>{
+      if(st==='SUBSCRIBED'){ $('rtDot').className='dot ok'; $('rtTxt').textContent='en vivo'; }
+      else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'){ $('rtDot').className='dot mal'; $('rtTxt').textContent=st; }
+      else { $('rtTxt').textContent=st; }
+    });
+}
+
+(async ()=>{ await cargar(); suscribir(); })();
+</script>
+</body>
+</html>
