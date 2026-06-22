@@ -707,6 +707,10 @@ const SUPABASE_URL      = 'https://nirxkzkfcctdigvuapuc.supabase.co';
 const SUPABASE_ANON_KEY = 'PEGA_AQUI_TU_ANON_KEY';      // ← copia desde gp-cola.html
 const DEMO_FALLBACK     = true;  // ← déjalo en true para probar en el iPad; ponlo en false en producción
 const BOX_TOTEM         = 'recepcion';
+// La tabla pacientes en producción aún no tiene consent_version/consent_fecha.
+// El consentimiento funciona en sesión (el checkbox habilita continuar); cuando
+// agregues esas columnas (o una tabla consentimientos) pon esto en true.
+const PERSIST_CONSENT   = false;
 
 let sb = null;
 try {
@@ -909,9 +913,11 @@ function adaptDemo(p, rut) {
 }
 
 async function fetchPacienteReal(rut) {
-  // 1) Ficha del paciente (sincronizada desde Medilink, key = rut canónico)
+  // 1) Ficha del paciente (sincronizada desde Medilink, key = rut canónico).
+  //    select('*') = tolerante al esquema real: trae las columnas que existan,
+  //    sin romperse si alguna (consent_version, etc.) aún no está en la tabla.
   const { data: pac, error: e1 } = await sb.from('pacientes')
-    .select('rut,nombre,apellido,apellido2,email,telefono,comuna,fecha_nac,consent_version,consent_fecha,blueprint')
+    .select('*')
     .eq('rut', rut).limit(1).maybeSingle();
   if (e1) throw e1;
   if (!pac) return null;
@@ -961,7 +967,7 @@ function buildPaciente(pac, pres, items, pk, rut) {
     email: pac.email || '—',
     telefono: pac.telefono || '—',
     comuna: pac.comuna || '—',
-    nac: pac.fecha_nac || null,
+    nac: pac.fecha_nac || pac.nac || null,
     consentVersion: pac.consent_version || null,
     consentFecha: fmtFecha(pac.consent_fecha),
     reserva: pres ? (pres.reserva || 0) : 0,
@@ -1301,8 +1307,8 @@ function habilitarMenor() {
 }
 
 async function continuarDatos() {
-  // Persistir la aceptación de condiciones si recién se aceptó (paciente mayor, real)
-  if (sb && currentPaciente && !currentPaciente._demo) {
+  // Persistir la aceptación de condiciones (solo si PERSIST_CONSENT y paciente mayor real)
+  if (PERSIST_CONSENT && sb && currentPaciente && !currentPaciente._demo) {
     const chk = document.getElementById('consent-check');
     if (chk && chk.checked && currentPaciente.consentVersion !== CONSENT_VERSION) {
       try {
