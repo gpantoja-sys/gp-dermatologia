@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Packs · GP Dermatología</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --crema:#f4efe7; --crema2:#fbf8f2; --verde:#1f3d34; --verde2:#2c5446;
+    --tinta:#26201a; --suave:#8a8076; --linea:#e3dccf;
+    --ok:#2f7d5b; --mal:#b23b3b; --esp:#b8860b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--crema);color:var(--tinta);font-family:'Inter',system-ui,sans-serif;line-height:1.5;padding:20px}
+  .wrap{max-width:820px;margin:0 auto}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  h1{font-family:'Playfair Display',serif;font-weight:600;color:var(--verde);font-size:26px;margin:0}
+  .sub{color:var(--suave);font-size:14px;margin:0 0 16px}
+  .estado{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--suave);font-family:ui-monospace,monospace}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--suave)}
+  .dot.ok{background:var(--ok)} .dot.mal{background:var(--mal)} .dot.esp{background:var(--esp)}
+
+  .resumen{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+  .rc{flex:1;min-width:150px;background:var(--crema2);border:1px solid var(--linea);border-radius:13px;padding:13px 16px}
+  .rc .n{font-family:ui-monospace,monospace;font-size:21px;font-weight:600;color:var(--verde)}
+  .rc .l{font-size:12px;color:var(--suave)}
+
+  button{font-family:inherit;font-size:14px;font-weight:600;border-radius:10px;padding:9px 15px;border:1px solid var(--verde);background:var(--verde);color:#fff;cursor:pointer;transition:.15s}
+  button:hover{background:var(--verde2)}
+  button.ghost{background:transparent;color:var(--verde)}
+  button.ghost:hover{background:rgba(31,61,52,.06)}
+  button.mini{font-size:12.5px;padding:7px 11px;border-radius:9px}
+  button.danger{border-color:var(--mal);color:var(--mal);background:transparent}
+  input,select{font-family:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--linea);border-radius:9px;background:#fff;color:var(--tinta)}
+  input:focus,select:focus{outline:none;border-color:var(--verde2)}
+  label{font-size:12px;color:var(--suave);font-weight:500}
+
+  details{background:var(--crema2);border:1px solid var(--linea);border-radius:14px;padding:4px 18px;margin-bottom:14px}
+  details summary{cursor:pointer;font-weight:600;color:var(--verde);padding:12px 0}
+  .formrow{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;padding-bottom:14px}
+  .fld{display:flex;flex-direction:column;gap:4px}
+  .fld.gr{flex:1;min-width:130px}
+
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+  .bar .sp{flex:1}
+  .filtros{display:flex;gap:6px}
+  .filtros button{background:#fff;color:var(--verde);border:1px solid var(--linea);font-weight:500;font-size:13px;padding:7px 12px}
+  .filtros button.active{background:var(--verde);color:#fff;border-color:var(--verde)}
+
+  .card{background:var(--crema2);border:1px solid var(--linea);border-radius:16px;padding:16px 18px;margin-bottom:12px}
+  .chead{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .cname{font-family:'Playfair Display',serif;font-size:18px;color:var(--tinta);font-weight:600}
+  .pk{font-size:12.5px;color:var(--suave)}
+  .crut{font-family:ui-monospace,monospace;font-size:12px;color:var(--suave);margin-left:auto}
+  .badge{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;border-radius:999px}
+  .badge.act{background:#eaf1ec;color:var(--verde)} .badge.ago{background:#f3e2e2;color:var(--mal)}
+
+  .meter{height:9px;background:#ece4d6;border-radius:6px;overflow:hidden;margin:8px 0 4px}
+  .meter i{display:block;height:100%;background:var(--verde);border-radius:6px}
+  .saldos{display:flex;justify-content:space-between;font-family:ui-monospace,monospace;font-size:13px;color:var(--suave)}
+  .saldos b{color:var(--tinta)}
+
+  .consumo{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:12px;padding-top:12px;border-top:1px solid var(--linea)}
+  .consumo .fld{min-width:110px}
+  .reemb{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tinta)}
+
+  .vacio{text-align:center;color:var(--suave);padding:40px 20px;font-family:'Playfair Display',serif;font-size:18px}
+  .vacio small{display:block;font-family:'Inter';font-size:13px;margin-top:6px}
+
+  .cierre table{width:100%;border-collapse:collapse;font-size:13.5px}
+  .cierre td,.cierre th{text-align:left;padding:7px 6px;border-bottom:1px solid var(--linea)}
+  .cierre th{color:var(--suave);font-weight:500;font-size:12px}
+  .cierre td.m{font-family:ui-monospace,monospace;text-align:right}
+  .reparto{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 14px}
+  .reparto .rc{min-width:140px}
+
+  #log{font-family:ui-monospace,monospace;font-size:12px;background:#fffdf9;border:1px solid var(--linea);border-radius:10px;padding:11px;max-height:170px;overflow:auto;white-space:pre-wrap}
+  .l-ok{color:var(--ok)} .l-mal{color:var(--mal)} .l-rt{color:var(--verde2);font-weight:600} .l-dim{color:var(--suave)}
+  .dbtns{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Packs</h1>
+    <div class="estado"><span class="dot" id="rtDot"></span><span id="rtTxt">conectando…</span></div>
+  </div>
+  <p class="sub">Saldos prepagados · anticipos en SkinTouch</p>
+
+  <div class="resumen">
+    <div class="rc"><div class="n" id="r-deuda">—</div><div class="l">Deuda a pacientes (saldo vigente)</div></div>
+    <div class="rc"><div class="n" id="r-act">—</div><div class="l">Packs activos</div></div>
+    <div class="rc"><div class="n" id="r-ago">—</div><div class="l">Agotados</div></div>
+  </div>
+
+  <details id="d-alta">
+    <summary>Nuevo pack · recibo a cuenta</summary>
+    <div class="formrow">
+      <div class="fld"><label>RUT paciente</label><input id="a-rut" placeholder="12345678-9" onblur="buscarPac()"></div>
+      <div class="fld gr"><label>Paciente</label><input id="a-nom" placeholder="(se completa por RUT)" readonly></div>
+      <div class="fld gr"><label>Nombre del pack</label><input id="a-pack" placeholder="Pack BBL"></div>
+      <div class="fld"><label>Monto</label><input id="a-monto" inputmode="numeric" placeholder="600.000" oninput="sepMiles(this)"></div>
+      <div class="fld"><label>Medio</label><select id="a-medio"><option>Transferencia</option><option>Tarjeta</option><option>MercadoPago</option><option>Link</option></select></div>
+      <button onclick="alta()">Crear y enviar recibo</button>
+    </div>
+  </details>
+
+  <div class="bar">
+    <input id="q" placeholder="Buscar por nombre o RUT" oninput="render()" style="flex:1;min-width:160px">
+    <div class="filtros">
+      <button id="f-act" class="active" onclick="setFiltro('activo')">Activos</button>
+      <button id="f-ago" onclick="setFiltro('agotado')">Agotados</button>
+      <button id="f-all" onclick="setFiltro('todos')">Todos</button>
+    </div>
+  </div>
+
+  <div id="lista"></div>
+
+  <details class="cierre" id="d-cierre">
+    <summary>Cierre · reparto del mes y saldos por facturar</summary>
+    <div class="reparto" id="reparto-mes"></div>
+    <div id="saldos-fact"></div>
+  </details>
+
+  <details>
+    <summary style="color:var(--suave);font-weight:400;font-size:13px">Herramientas de prueba</summary>
+    <div class="dbtns">
+      <button class="ghost mini" onclick="pruebaPack()">+ Pack de prueba (BBL · $600.000)</button>
+      <button class="danger mini" onclick="limpiarPrueba()">Limpiar pruebas</button>
+    </div>
+    <div id="log"></div>
+  </details>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://nirxkzkfcctdigvuapuc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pcnhremtmY2N0ZGlndnVhcHVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDY5MTUsImV4cCI6MjA5NTEyMjkxNX0.iGTkHTRgdsEDoUsvS9ApQtSRAJV52z-_IASlFBmPqDM';
+
+const WA_PROXY = '/api/whatsapp';
+const RUT_PRUEBA = '0-0';
+const TEL_PRUEBA = '56998266918';   // para probar la renovación cuando el paciente no tiene tel
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const $ = id => document.getElementById(id);
+const fmt = n => '$' + Math.round(n||0).toLocaleString('es-CL');
+const soloNum = s => parseInt(String(s||'').replace(/\D/g,''),10) || 0;
+function log(m,c){ const d=$('log'); const t=new Date().toLocaleTimeString('es-CL');
+  const s=document.createElement('div'); if(c)s.className=c; s.textContent=`[${t}] ${m}`; d.appendChild(s); d.scrollTop=d.scrollHeight; }
+function sepMiles(el){ const n=soloNum(el.value); el.value = n? n.toLocaleString('es-CL'):''; }
+
+let EMP={skin:null,laser:null};
+let PACKS=[];
+let FILTRO='activo';
+
+async function cargarEmpresas(){
+  const {data,error}=await sb.from('empresas').select('id,tipo');
+  if(error){ log('empresas → '+error.message,'l-mal'); return; }
+  (data||[]).forEach(e=>{ if(e.tipo==='honorarios')EMP.skin=e.id; if(e.tipo==='insumos')EMP.laser=e.id; });
+}
+
+async function cargar(){
+  const {data,error}=await sb.from('v_pack_saldos').select('*').order('fecha_compra',{ascending:false});
+  if(error){ log('packs → '+error.message,'l-mal'); return; }
+  PACKS=data||[];
+  // resumen
+  const act=PACKS.filter(p=>p.estado==='activo');
+  const ago=PACKS.filter(p=>p.estado==='agotado');
+  $('r-deuda').textContent=fmt(act.reduce((s,p)=>s+(p.saldo||0),0));
+  $('r-act').textContent=act.length; $('r-ago').textContent=ago.length;
+  render();
+}
+
+function nombrePac(p){ return [p.nombre,p.apellido].filter(Boolean).join(' ').trim() || p.paciente_rut; }
+
+function setFiltro(f){ FILTRO=f;
+  ['act','ago','all'].forEach(k=>$('f-'+k).classList.remove('active'));
+  $('f-'+(f==='activo'?'act':f==='agotado'?'ago':'all')).classList.add('active'); render(); }
+
+function render(){
+  const q=($('q').value||'').toLowerCase();
+  const cont=$('lista'); cont.innerHTML='';
+  let arr=PACKS.filter(p=> FILTRO==='todos' || p.estado===FILTRO);
+  if(q) arr=arr.filter(p=> (nombrePac(p).toLowerCase().includes(q) || (p.paciente_rut||'').includes(q)));
+  if(!arr.length){ cont.innerHTML='<div class="vacio">Sin packs<small>Nada que mostrar con este filtro</small></div>'; return; }
+  arr.forEach(p=>cont.insertAdjacentHTML('beforeend',card(p)));
+}
+
+function card(p){
+  const pct=p.monto_inicial? Math.max(0,Math.min(100, Math.round(100*p.saldo/p.monto_inicial))):0;
+  const ago=p.estado==='agotado' || p.saldo<=0;
+  return `<div class="card">
+    <div class="chead">
+      <span class="cname">${nombrePac(p)}</span>
+      <span class="pk">${p.nombre_pack||'Pack'}</span>
+      <span class="badge ${ago?'ago':'act'}">${ago?'Agotado':'Activo'}</span>
+      <span class="crut">${p.paciente_rut}</span>
+    </div>
+    <div class="meter"><i style="width:${pct}%"></i></div>
+    <div class="saldos"><span>Saldo <b>${fmt(p.saldo)}</b></span><span>de ${fmt(p.monto_inicial)}</span></div>
+    ${ago ? `<div class="consumo">
+        <button class="ghost mini" onclick="renovar(${p.pack_id},'${p.paciente_rut}','${(nombrePac(p)).replace(/'/g,'')}')">
+          ${p.renov_ofrecida?'Reenviar oferta de renovación':'Ofrecer renovación (7 BBL al precio de 6)'}</button>
+      </div>`
+      : `<div class="consumo">
+        <div class="fld"><label>Honorario (SkinT)</label><input id="h-${p.pack_id}" inputmode="numeric" placeholder="0" oninput="sepMiles(this)"></div>
+        <div class="fld"><label>Insumo (LaserT)</label><input id="i-${p.pack_id}" inputmode="numeric" placeholder="0" oninput="sepMiles(this)"></div>
+        <label class="reemb"><input type="checkbox" id="r-${p.pack_id}"> reembolsable</label>
+        <button class="mini" onclick="consumo(${p.pack_id},'${p.paciente_rut}',${p.saldo})">Registrar consumo</button>
+      </div>`}
+  </div>`;
+}
+
+// ---- alta ----
+async function buscarPac(){
+  const rut=$('a-rut').value.trim(); if(!rut) return;
+  const {data,error}=await sb.from('pacientes').select('nombre,apellido').eq('rut',rut).maybeSingle();
+  if(error){ log('paciente → '+error.message,'l-mal'); return; }
+  $('a-nom').value = data ? [data.nombre,data.apellido].filter(Boolean).join(' ') : '⚠ no encontrado';
+}
+async function alta(){
+  const rut=$('a-rut').value.trim(), monto=soloNum($('a-monto').value);
+  if(!rut || !monto){ alert('Falta RUT y monto.'); return; }
+  if(($('a-nom').value||'').includes('no encontrado')){ alert('Ese RUT no existe en pacientes.'); return; }
+  const {error}=await sb.from('packs').insert({
+    paciente_rut:rut, nombre_pack:$('a-pack').value||'Pack', monto_inicial:monto, saldo:monto,
+    empresa_anticipo:EMP.skin, documento:'anticipo', origen:$('a-medio').value, estado:'activo' });
+  if(error){ log('alta → '+error.message,'l-mal'); alert('Error: '+error.message); return; }
+  log('Pack creado (recibo a cuenta) · '+rut,'l-ok');
+  // recibo por email: pendiente de integración de correo; por ahora queda registrado.
+  $('a-rut').value=$('a-nom').value=$('a-pack').value=$('a-monto').value='';
+  $('d-alta').open=false; cargar();
+}
+
+// ---- consumo ----
+async function consumo(packId, rut, saldo){
+  const hon=soloNum($('h-'+packId).value), ins=soloNum($('i-'+packId).value);
+  const reemb=$('r-'+packId).checked;
+  const total=hon+ins;
+  if(total<=0){ alert('Indica honorario y/o insumo.'); return; }
+  if(total>saldo){ if(!confirm('El consumo ('+fmt(total)+') supera el saldo ('+fmt(saldo)+'). ¿Continuar igual?')) return; }
+  try{
+    // Boletas al paciente (todas SkinTouch). Si reembolsable: A honorario reembolsable + B insumo no reembolsable.
+    let boletaA=null, boletaB=null;
+    if(reemb){
+      if(hon>0){ const {data,error}=await sb.from('boletas').insert({empresa_id:EMP.skin,paciente_rut:rut,neto:hon,iva:0,total:hon,reembolsable:true}).select().single(); if(error)throw error; boletaA=data.id; }
+      if(ins>0){ const {data,error}=await sb.from('boletas').insert({empresa_id:EMP.skin,paciente_rut:rut,neto:ins,iva:0,total:ins,reembolsable:false}).select().single(); if(error)throw error; boletaB=data.id; }
+    } else {
+      const {data,error}=await sb.from('boletas').insert({empresa_id:EMP.skin,paciente_rut:rut,neto:total,iva:0,total:total,reembolsable:false}).select().single(); if(error)throw error; boletaA=data.id;
+    }
+    const nuevoSaldo=saldo-total;
+    const {error:em}=await sb.from('pack_movimientos').insert({
+      pack_id:packId, paciente_rut:rut, monto_descontado:total, honorario_monto:hon, insumo_monto:ins,
+      saldo_resultante:nuevoSaldo, boleta_skintouch:boletaA, boleta_lasertouch:boletaB });
+    if(em)throw em;
+    const {error:ep}=await sb.from('packs').update({ saldo:nuevoSaldo, estado: nuevoSaldo<=0?'agotado':'activo' }).eq('id',packId);
+    if(ep)throw ep;
+    log(`Consumo ${fmt(total)} · pack ${packId} · boleta SkinTouch${reemb?' (A reemb + B no reemb)':''}`,'l-ok');
+    cargar(); cargarCierre();
+  }catch(err){ log('consumo → '+(err.message||err),'l-mal'); alert('Error: '+(err.message||err)); }
+}
+
+// ---- renovación ----
+async function renovar(packId, rut, nombre){
+  let tel=TEL_PRUEBA;
+  const {data}=await sb.from('pacientes').select('tel').eq('rut',rut).maybeSingle();
+  if(data && data.tel) tel=data.tel;
+  const msg=`GP Dermatología · ${nombre}, tu pack está por agotarse. Tenemos una renovación preferente para ti: 7 sesiones de BBL al precio de 6. Cuando quieras la activamos.`;
+  try{
+    const r=await fetch(WA_PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({number:tel,body:msg,name:nombre})});
+    const d=await r.json().catch(()=>({}));
+    if(r.ok&&d.ok){ log('Oferta de renovación enviada a '+tel,'l-ok'); await sb.from('packs').update({renov_ofrecida:true}).eq('id',packId); cargar(); }
+    else log('renovación WhatsApp → '+(d.error||('HTTP '+r.status)),'l-mal');
+  }catch(e){ log('renovación → '+e.message,'l-mal'); }
+}
+
+// ---- cierre: reparto del mes + saldos por facturar ----
+async function cargarCierre(){
+  // reparto del mes (LaserTouch factura a SkinTouch)
+  const rep=await sb.from('v_reparto_pack_mes_actual').select('*').maybeSingle();
+  const cont=$('reparto-mes');
+  if(rep.error){ cont.innerHTML='<div class="l" style="color:var(--suave)">Vista de reparto no disponible (¿corriste el delta contable?)</div>'; }
+  else { const r=rep.data||{};
+    cont.innerHTML=`
+      <div class="rc"><div class="n">${fmt(r.insumo_laser_a_facturar)}</div><div class="l">LaserTouch factura a SkinTouch (mes)</div></div>
+      <div class="rc"><div class="n">${fmt(r.honorario_skintouch)}</div><div class="l">Honorarios SkinTouch (mes)</div></div>
+      <div class="rc"><div class="n">${r.tratamientos||0}</div><div class="l">Tratamientos de pack (mes)</div></div>`;
+  }
+  // saldos por facturar (31-dic)
+  const sf=await sb.from('v_saldos_por_facturar').select('*');
+  const t=$('saldos-fact');
+  if(sf.error){ t.innerHTML=''; return; }
+  const rows=(sf.data||[]).map(s=>`<tr><td>${s.nombre||s.paciente_rut}</td><td>${s.paciente_rut}</td><td class="m">${fmt(s.saldo_por_facturar)}</td></tr>`).join('');
+  t.innerHTML = rows ? `<table><thead><tr><th>Paciente</th><th>RUT</th><th style="text-align:right">Saldo por facturar</th></tr></thead><tbody>${rows}</tbody></table>`
+                     : '<div class="l" style="color:var(--suave)">Sin saldos por facturar.</div>';
+}
+
+// ---- pruebas ----
+async function pruebaPack(){
+  const {error}=await sb.from('packs').insert({
+    paciente_rut:RUT_PRUEBA, nombre_pack:'Pack BBL', monto_inicial:600000, saldo:600000,
+    empresa_anticipo:EMP.skin, documento:'anticipo', origen:'PRUEBA', estado:'activo' });
+  log(error?('pack prueba → '+error.message):'Pack de prueba creado.', error?'l-mal':'l-ok'); cargar();
+}
+async function limpiarPrueba(){
+  await sb.from('boletas').delete().eq('paciente_rut',RUT_PRUEBA);
+  await sb.from('cobros').delete().eq('paciente_rut',RUT_PRUEBA);
+  const {error}=await sb.from('packs').delete().eq('paciente_rut',RUT_PRUEBA); // cascade movimientos
+  log(error?('limpiar → '+error.message):'Pruebas eliminadas.', error?'l-mal':'l-ok'); cargar(); cargarCierre();
+}
+
+// ---- Realtime ----
+function suscribir(){
+  $('rtDot').className='dot esp'; $('rtTxt').textContent='suscribiendo…';
+  sb.channel('packs-vivo')
+    .on('postgres_changes',{event:'*',schema:'public',table:'packs'},()=>cargar())
+    .on('postgres_changes',{event:'*',schema:'public',table:'pack_movimientos'},()=>{cargar();cargarCierre();})
+    .subscribe(st=>{
+      if(st==='SUBSCRIBED'){ $('rtDot').className='dot ok'; $('rtTxt').textContent='en vivo'; }
+      else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'){ $('rtDot').className='dot mal'; $('rtTxt').textContent=st; }
+      else { $('rtTxt').textContent=st; }
+    });
+}
+
+(async()=>{ await cargarEmpresas(); await cargar(); await cargarCierre(); suscribir(); })();
+</script>
+</body>
+</html>
