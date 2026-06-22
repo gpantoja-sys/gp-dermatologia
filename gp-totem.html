@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SMI · Tótem Recepción</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --cream:    #F4EFE4;
+  --cream2:   #EDE7D9;
+  --cream3:   #E5DED0;
+  --green:    #2A3D2C;
+  --green2:   #3D5C40;
+  --green-lt: #6B7B6E;
+  --green-xs: #C8D4C9;
+  --border:   #DDD8CE;
+  --text:     #1C2B1E;
+  --muted:    #7A8C7C;
+  --error:    #8B2E2E;
+  --error-bg: #F5EAEA;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--cream);
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── SHELL ── */
+.shell {
+  width: 100vw; height: 100vh; height: 100dvh;
+  display: flex; flex-direction: column;
+  position: relative;
+}
+
+/* ── HEADER ── */
+.header {
+  display: flex; align-items: center; justify-content: center;
+  padding: 18px 36px 12px;
+  border-bottom: .5px solid var(--border);
+  flex-shrink: 0;
+  background: var(--cream);
+}
+.hlogo-gp { height: 84px; width: auto; display: block; }
+.smi-mark { display: flex; justify-content: center; padding: 8px 0 2px; flex-shrink: 0; }
+.smi-mark img { height: 60px; width: auto; opacity: .92; }
+.hclock { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 400; color: var(--muted); }
+
+/* ── PROGRESS STEPS ── */
+.steps {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; padding: 18px 36px 0; flex-shrink: 0;
+}
+.step-item {
+  display: flex; align-items: center; gap: 0; flex: 1;
+}
+.step-circle {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 500; flex-shrink: 0;
+  border: 1.5px solid var(--border);
+  color: var(--muted); background: var(--cream);
+  transition: all .3s;
+}
+.step-circle.done   { background: var(--green); border-color: var(--green); color: var(--cream); }
+.step-circle.active { background: var(--cream); border-color: var(--green); color: var(--green); }
+.step-label {
+  font-size: 9px; font-weight: 500; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted);
+  margin-left: 8px; white-space: nowrap;
+  transition: color .3s;
+}
+.step-label.active { color: var(--green); }
+.step-line {
+  flex: 1; height: .5px; background: var(--border);
+  margin: 0 10px; min-width: 20px;
+}
+
+/* ── CONTENT AREA ── */
+.content {
+  flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;
+  display: flex; flex-direction: column;
+  padding: 28px 48px 28px;
+  scrollbar-width: none;
+}
+.content::-webkit-scrollbar { display: none; }
+
+/* ── SCREEN visibility ── */
+.screen { display: none; flex-direction: column; height: 100%; }
+.screen.active { display: flex; }
+
+/* ── SHARED TYPOGRAPHY ── */
+.sc-eyebrow {
+  font-size: 12px; font-weight: 500; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+}
+.sc-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 44px; font-weight: 400; color: var(--text);
+  line-height: 1.1; margin-bottom: 6px;
+}
+.sc-title em { font-style: italic; color: var(--green2); }
+.sc-sub {
+  font-size: 17px; color: var(--muted); line-height: 1.55;
+  margin-bottom: 20px;
+}
+.sc-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 22px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.5;
+}
+.sc-note {
+  margin: 18px 0 4px;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 22px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.5;
+}
+.consent-block { margin: 16px 0 4px; text-align: center; }
+.consent-row { display: flex; align-items: flex-start; gap: 10px; text-align: left; max-width: 460px; margin: 0 auto; cursor: pointer; }
+.consent-row input[type="checkbox"] { width: 22px; height: 22px; margin-top: 1px; flex-shrink: 0; accent-color: var(--green2); cursor: pointer; }
+.consent-text { font-size: 13px; color: var(--text); line-height: 1.45; }
+.consent-link { background: none; border: none; color: var(--green2); font-size: 13px; text-decoration: underline; cursor: pointer; margin-top: 8px; font-family: inherit; }
+.consent-done { display: none; margin: 16px 0 4px; text-align: center; }
+.consent-done-text { font-size: 13px; color: var(--text); }
+.consent-done-text strong { color: var(--green2); font-weight: 600; }
+.minor-notice { display: none; margin: 16px auto 4px; max-width: 460px; background: var(--cream2); border: .5px solid var(--border); border-radius: 12px; padding: 14px 18px; text-align: center; }
+.minor-notice-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.minor-notice-text { font-size: 12px; color: var(--muted); line-height: 1.45; }
+.demo-btn { margin-top: 12px; background: none; border: 1px dashed var(--green2); color: var(--green2); font-size: 12px; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-family: inherit; }
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(28,43,30,.55);
+  display: none; align-items: center; justify-content: center;
+  padding: 32px; z-index: 100;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: var(--cream); border-radius: 18px; max-width: 560px; width: 100%;
+  max-height: 80vh; display: flex; flex-direction: column; padding: 28px 28px 24px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+.modal-title { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--text); margin-bottom: 12px; }
+.modal-body { overflow-y: auto; font-size: 13px; color: var(--text); line-height: 1.55; margin-bottom: 18px; }
+.modal-body h4 { font-size: 13px; margin: 14px 0 4px; color: var(--green2); }
+.modal-body p { margin: 0 0 8px; }
+.modal-note { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 6px; }
+
+/* ── INPUT ── */
+.input-wrap { position: relative; margin-bottom: 10px; }
+.input-wrap input {
+  width: 100%; padding: 18px 20px;
+  font-size: 28px; font-family: 'Inter', sans-serif;
+  font-weight: 300; letter-spacing: .08em;
+  border: 1.5px solid var(--border); border-radius: 14px;
+  background: #fff; color: var(--text);
+  outline: none; transition: border-color .2s;
+  -webkit-appearance: none;
+}
+.input-wrap input:focus { border-color: var(--green); }
+.input-wrap input.error { border-color: var(--error); background: var(--error-bg); }
+.input-hint { font-size: 12px; color: var(--muted); margin-top: 6px; padding-left: 4px; }
+.input-error { font-size: 12px; color: var(--error); margin-top: 6px; padding-left: 4px; display: none; }
+.input-error.show { display: block; }
+
+/* ── KEYPAD ── */
+.keypad {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; margin-top: 14px; max-width: 360px;
+}
+.key {
+  padding: 14px; border: .5px solid var(--border);
+  border-radius: 12px; background: #fff;
+  font-size: 22px; font-weight: 400; color: var(--text);
+  text-align: center; cursor: pointer;
+  transition: background .12s, border-color .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.key:active { background: var(--cream2); border-color: var(--green); }
+.key.del { font-size: 16px; color: var(--muted); }
+.key.empty { visibility: hidden; }
+
+/* ── DATA CARD ── */
+.data-card {
+  background: #fff; border: .5px solid var(--border);
+  border-radius: 16px; padding: 0; overflow: hidden;
+  margin-bottom: 20px;
+}
+.data-row {
+  display: flex; align-items: center;
+  padding: 18px 22px; border-bottom: .5px solid var(--border);
+  gap: 16px;
+}
+.data-row:last-child { border-bottom: none; }
+.data-icon {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--cream2); display: flex;
+  align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 16px;
+}
+.data-label { font-size: 13px; color: var(--muted); margin-bottom: 2px; }
+.data-value { font-size: 20px; font-weight: 500; color: var(--text); }
+
+/* ── PRESUPUESTO CARDS ── */
+.presup-cards { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+.presup-card {
+  background: #fff; border: .5px solid var(--border);
+  border-radius: 16px; padding: 20px 22px;
+  display: flex; align-items: center; gap: 16px;
+}
+.presup-vert {
+  width: 4px; border-radius: 2px; align-self: stretch; flex-shrink: 0;
+}
+.presup-body { flex: 1; }
+.presup-empresa { font-size: 12px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.presup-concepto { font-size: 16px; color: var(--text); margin-bottom: 8px; line-height: 1.4; }
+.presup-monto { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 400; color: var(--text); }
+.presup-iva { font-size: 11px; color: var(--muted); margin-left: 6px; }
+.presup-total {
+  background: var(--cream2); border: .5px solid var(--border);
+  border-radius: 12px; padding: 16px 22px;
+}
+.presup-total-row { display: flex; align-items: center; justify-content: space-between; }
+.presup-total-row + .presup-total-row { margin-top: 8px; }
+.presup-reserva { font-size: 13px; color: var(--muted); }
+.presup-saldo { margin-top: 12px; padding-top: 12px; border-top: .5px solid var(--border); }
+.presup-saldo-msg { display: none; font-size: 12px; color: var(--green2); margin-top: 10px; line-height: 1.4; }
+.presup-total-label { font-size: 12px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.presup-total-sub { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 400; color: var(--text); }
+.presup-total-monto { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 400; color: var(--text); }
+.presup-aviso {
+  background: var(--cream2); border: .5px solid var(--border);
+  border-radius: 16px; padding: 24px 22px; text-align: center;
+  margin-bottom: 20px;
+}
+.presup-aviso-title { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--text); margin-bottom: 6px; }
+.presup-aviso-text { font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+/* ── PAGO OPTIONS ── */
+.pago-saldo { text-align: center; font-size: 14px; color: var(--muted); margin: -6px 0 18px; }
+.pago-saldo strong { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--green2); }
+.pago-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+.pago-opt {
+  border: 1.5px solid var(--border); border-radius: 16px;
+  padding: 20px 12px; cursor: pointer; background: #fff;
+  transition: all .2s; text-align: center;
+}
+.pago-opt.selected { border-color: var(--green); background: rgba(42,61,44,0.04); }
+.pago-opt-icon { font-size: 26px; margin-bottom: 8px; }
+.pago-opt-title { font-size: 16px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+.pago-opt-sub { font-size: 13px; color: var(--muted); line-height: 1.4; }
+
+.pago-instrucciones {
+  background: var(--cream2); border: .5px solid var(--border);
+  border-radius: 14px; padding: 20px 22px;
+  display: none;
+}
+.pago-instrucciones.show { display: block; }
+.pago-step {
+  display: flex; gap: 12px; align-items: flex-start;
+  margin-bottom: 14px;
+}
+.pago-step:last-child { margin-bottom: 0; }
+.pago-step-num {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--green); color: var(--cream);
+  font-size: 11px; font-weight: 500;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.pago-step-text { font-size: 15px; color: var(--text); line-height: 1.5; }
+.pago-step-text strong { font-weight: 500; }
+.webpay-qrs { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+.webpay-qr { background: #fff; border: .5px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; }
+.webpay-qr svg { width: 110px; height: 110px; display: block; margin: 0 auto 8px; }
+.webpay-qr-empresa { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text); }
+.webpay-qr-monto { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--green2); margin-top: 2px; }
+.webpay-note { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.5; max-width: 460px; margin: 14px auto 0; }
+
+/* ── CONFIRMACIÓN ── */
+.confirm-wrap {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+}
+.confirm-icon {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: rgba(42,61,44,0.08);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 24px; font-size: 36px;
+}
+.confirm-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 34px; font-weight: 400; color: var(--text);
+  margin-bottom: 8px; line-height: 1.2;
+}
+.confirm-title em { font-style: italic; color: var(--green2); }
+.confirm-sub { font-size: 15px; color: var(--muted); line-height: 1.6; max-width: 340px; margin: 0 auto 32px; }
+.confirm-boletas { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 360px; margin: 0 auto 28px; }
+.confirm-boleta {
+  background: #fff; border: .5px solid var(--border);
+  border-radius: 12px; padding: 14px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.confirm-boleta-empresa { font-size: 12px; color: var(--muted); }
+.confirm-boleta-estado {
+  font-size: 11px; font-weight: 500; color: var(--green2);
+  background: rgba(42,61,44,0.06); border: .5px solid var(--green-xs);
+  border-radius: 99px; padding: 3px 10px;
+}
+.confirm-wa { font-size: 12px; color: var(--muted); }
+.confirm-wa strong { color: var(--text); }
+
+/* ── BUTTONS ── */
+.btn-row { display: flex; gap: 10px; margin-top: auto; padding-top: 16px; flex-shrink: 0; }
+.btn-primary {
+  flex: 1; padding: 18px; border-radius: 12px;
+  background: var(--green); color: var(--cream);
+  font-size: 15px; font-weight: 500; border: none;
+  cursor: pointer; font-family: 'Inter', sans-serif;
+  transition: background .15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-primary:active { background: var(--green2); }
+.btn-primary:disabled { background: var(--border); color: var(--muted); cursor: default; }
+.btn-secondary {
+  padding: 18px 24px; border-radius: 12px;
+  background: transparent; color: var(--muted);
+  font-size: 15px; font-weight: 400; border: .5px solid var(--border);
+  cursor: pointer; font-family: 'Inter', sans-serif;
+  transition: all .15s;
+}
+.btn-secondary:active { background: var(--cream2); }
+
+/* ── LOADING ── */
+.loading-overlay {
+  position: fixed; inset: 0;
+  background: rgba(244,239,228,0.92);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; opacity: 0; pointer-events: none;
+  transition: opacity .3s;
+}
+.loading-overlay.show { opacity: 1; pointer-events: all; }
+.loading-inner { text-align: center; }
+.spinner {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--green);
+  animation: spin .8s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 14px; color: var(--muted); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%) translateY(20px);
+  background: var(--green); color: var(--cream);
+  padding: 14px 22px; border-radius: 12px; font-size: 14px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.22);
+  opacity: 0; pointer-events: none; transition: all .3s; z-index: 120;
+  max-width: 90vw; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── LLAMAR CLARITA ── */
+.clarita-bar {
+  background: var(--cream2); border-top: .5px solid var(--border);
+  padding: 12px 48px; padding-bottom: max(12px, env(safe-area-inset-bottom));
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; flex-shrink: 0; position: relative;
+}
+.clarita-bar span { font-size: 12px; color: var(--muted); }
+.clarita-bar .hclock { position: absolute; right: 48px; top: 50%; transform: translateY(-50%); }
+.clarita-btn {
+  font-size: 12px; font-weight: 500; color: var(--green);
+  background: none; border: .5px solid var(--green-xs);
+  border-radius: 99px; padding: 5px 14px; cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+
+/* scrollable inner when needed */
+.scroll-area { overflow-y: auto; flex: 1; }
+.scroll-area::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loading">
+  <div class="loading-inner">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">Buscando tu ficha…</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<div class="shell">
+
+  <!-- HEADER -->
+  <div class="header">
+    <img class="hlogo-gp" src="data:image/png;base64,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" alt="Gonzalo Pantoja">
+  </div>
+
+  <!-- PROGRESS STEPS -->
+  <div class="steps" id="steps-bar">
+    <div class="step-item">
+      <div class="step-circle active" id="sc1">1</div>
+      <span class="step-label active" id="sl1">Identificación</span>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-item">
+      <div class="step-circle" id="sc2">2</div>
+      <span class="step-label" id="sl2">Mis datos</span>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-item">
+      <div class="step-circle" id="sc3">3</div>
+      <span class="step-label" id="sl3">Presupuesto</span>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-item">
+      <div class="step-circle" id="sc4">4</div>
+      <span class="step-label" id="sl4">Pago</span>
+      <div class="step-line"></div>
+    </div>
+    <div class="step-item">
+      <div class="step-circle" id="sc5">5</div>
+      <span class="step-label" id="sl5">Listo</span>
+    </div>
+  </div>
+
+  <!-- SMI MARK -->
+  <div class="smi-mark">
+    <img src="data:image/png;base64,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" alt="Santiago Medical Institute">
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ══ SCREEN 1: IDENTIFICACIÓN ══ -->
+    <div class="screen active" id="screen-1">
+      <div class="sc-eyebrow">Te damos la bienvenida</div>
+      <div class="sc-title">Qué bueno que <em>estés aquí.</em></div>
+      <div class="sc-sub">Cuidar tu piel es una de las mejores decisiones que puedes tomar. Más de 25 años de criterio médico y tecnología de vanguardia, al servicio de tu piel para toda la vida. El Dr. Pantoja te espera.</div>
+
+      <div class="input-wrap">
+        <input type="text" id="rut-input" placeholder="12.345.678-9"
+               inputmode="numeric" autocomplete="off" maxlength="12"
+               oninput="formatRut(this)" onkeydown="rutKeydown(event)">
+        <div class="input-hint">Ingresa tu RUT para comenzar, o usa el teclado</div>
+        <div class="input-error" id="rut-error">RUT no encontrado. Verifica o consulta a recepción.</div>
+      </div>
+
+      <div class="keypad">
+        <div class="key" onclick="keyPress('1')">1</div>
+        <div class="key" onclick="keyPress('2')">2</div>
+        <div class="key" onclick="keyPress('3')">3</div>
+        <div class="key" onclick="keyPress('4')">4</div>
+        <div class="key" onclick="keyPress('5')">5</div>
+        <div class="key" onclick="keyPress('6')">6</div>
+        <div class="key" onclick="keyPress('7')">7</div>
+        <div class="key" onclick="keyPress('8')">8</div>
+        <div class="key" onclick="keyPress('9')">9</div>
+        <div class="key" onclick="keyPress('K')">K</div>
+        <div class="key" onclick="keyPress('0')">0</div>
+        <div class="key del" onclick="keyDel()">⌫</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" onclick="buscarPaciente()" id="btn-buscar" disabled>
+          Buscar mi ficha →
+        </button>
+      </div>
+
+      <div class="sc-footer">El viaje para proteger, preservar o reparar tu piel está por comenzar.</div>
+    </div>
+
+    <!-- ══ SCREEN 2: DATOS ══ -->
+    <div class="screen" id="screen-2">
+      <div class="sc-eyebrow">Paso 2 de 5</div>
+      <div class="sc-title">Hola, <em id="d-greet">—</em>.</div>
+      <div class="sc-sub">Demos un vistazo rápido a tus datos antes de seguir.</div>
+
+      <div class="data-card">
+        <div class="data-row">
+          <div class="data-icon">👤</div>
+          <div>
+            <div class="data-label">Nombre completo</div>
+            <div class="data-value" id="d-nombre">—</div>
+          </div>
+        </div>
+        <div class="data-row">
+          <div class="data-icon">📧</div>
+          <div>
+            <div class="data-label">Correo electrónico</div>
+            <div class="data-value" id="d-email">—</div>
+          </div>
+        </div>
+        <div class="data-row">
+          <div class="data-icon">📱</div>
+          <div>
+            <div class="data-label">Teléfono</div>
+            <div class="data-value" id="d-telefono">—</div>
+          </div>
+        </div>
+        <div class="data-row">
+          <div class="data-icon">📍</div>
+          <div>
+            <div class="data-label">Comuna</div>
+            <div class="data-value" id="d-comuna">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sc-note">Cuidamos tu información con la misma discreción con que cuidamos tu piel.</div>
+
+      <div class="consent-block" id="consent-block">
+        <label class="consent-row">
+          <input type="checkbox" id="consent-check" onchange="toggleConsent()">
+          <span class="consent-text">He leído y acepto las Condiciones de Atención y autorizo el tratamiento de mis datos personales y de salud.</span>
+        </label>
+        <button type="button" class="consent-link" onclick="openConditions()">Ver condiciones</button>
+      </div>
+
+      <div class="consent-done" id="consent-done">
+        <span class="consent-done-text">✓ Aceptaste nuestras condiciones el <strong id="consent-done-fecha">—</strong>.</span>
+        <button type="button" class="consent-link" onclick="openConditions()">Ver condiciones</button>
+      </div>
+
+      <div class="minor-notice" id="minor-notice">
+        <div class="minor-notice-title">Paciente menor de edad</div>
+        <div class="minor-notice-text">La aceptación de las condiciones la realiza el padre, madre o apoderado en recepción. Acércate y te ayudamos a continuar.</div>
+        <button type="button" class="demo-btn" onclick="habilitarMenor()">⚙ (demo) Clarita habilita</button>
+      </div>
+
+      <div class="consent-done" id="minor-habilitado">
+        <span class="consent-done-text">✓ Recepción habilitó la continuación. El apoderado aceptó las condiciones en nombre de <strong id="minor-nombre">—</strong>.</span>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="llamarClarita('datos')">Corregir en recepción</button>
+        <button class="btn-primary" onclick="continuarDatos()" id="btn-continuar2" disabled>Todo correcto ✓</button>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 3: PRESUPUESTO ══ -->
+    <div class="screen" id="screen-3">
+      <div class="sc-eyebrow">Paso 3 de 5</div>
+      <div class="sc-title">Tu <em>plan</em> de hoy</div>
+      <div class="sc-sub">Este es el detalle de tu atención de hoy.</div>
+
+      <div class="scroll-area">
+        <div class="presup-cards" id="presup-cards"></div>
+
+        <div class="presup-total" id="presup-total"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="llamarClarita('presupuesto')">Tengo una pregunta</button>
+        <button class="btn-primary" id="btn-presup" onclick="aceptarPresupuesto()">Acepto el presupuesto ✓</button>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 4: PAGO ══ -->
+    <div class="screen" id="screen-4">
+      <div class="sc-eyebrow">Paso 4 de 5</div>
+      <div class="sc-title">¿Cómo <em>prefieres pagar?</em></div>
+      <div class="sc-sub">Selecciona tu forma de pago</div>
+      <div class="pago-saldo">Saldo a pagar hoy: <strong id="pago-saldo-monto">$405.000</strong></div>
+
+      <div class="pago-opts">
+        <div class="pago-opt" id="opt-tarjeta" onclick="selectPago('tarjeta')">
+          <div class="pago-opt-icon">💳</div>
+          <div class="pago-opt-title">Tarjeta</div>
+          <div class="pago-opt-sub">Terminal Transbank</div>
+        </div>
+        <div class="pago-opt" id="opt-webpay" onclick="selectPago('webpay')">
+          <div class="pago-opt-icon">📱</div>
+          <div class="pago-opt-title">Desde mi teléfono</div>
+          <div class="pago-opt-sub">QR WebPay<br>por empresa</div>
+        </div>
+        <div class="pago-opt" id="opt-transferencia" onclick="selectPago('transferencia')">
+          <div class="pago-opt-icon">🏦</div>
+          <div class="pago-opt-title">Transferencia</div>
+          <div class="pago-opt-sub">Confirma Clarita</div>
+        </div>
+      </div>
+
+      <!-- Instrucciones tarjeta (dinámicas) -->
+      <div class="pago-instrucciones" id="instr-tarjeta"></div>
+
+      <!-- Instrucciones WebPay (dinámicas) -->
+      <div class="pago-instrucciones" id="instr-webpay"></div>
+
+      <!-- Instrucciones transferencia (dinámicas) -->
+      <div class="pago-instrucciones" id="instr-transferencia"></div>
+
+      <div class="sc-note">Las decisiones que tomas hoy definen tu piel de los próximos diez años.</div>
+
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="goScreen(3)">← Volver</button>
+        <button class="btn-primary" id="btn-confirmar-pago" onclick="confirmarPago()" disabled>
+          Confirmar →
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 5: CONFIRMACIÓN ══ -->
+    <div class="screen" id="screen-5">
+      <div class="confirm-wrap">
+        <div class="confirm-icon">✓</div>
+        <div class="confirm-title">¡Listo, <em id="c-nombre-short">María</em>!</div>
+        <div class="confirm-sub">Tu recepción está completa. En breve te llamaremos para tu atención con el Dr. Pantoja.</div>
+
+        <div class="confirm-boletas">
+          <div class="confirm-boleta">
+            <div>
+              <div class="confirm-boleta-empresa">SkinTouch SpA</div>
+              <div style="font-size:13px;color:var(--text);font-weight:500" id="c-boleta-sk"><span id="c-sk-label">Boleta honorarios (reembolsable)</span> · <span id="c-sk-monto">$180.000</span></div>
+            </div>
+            <div class="confirm-boleta-estado">Enviada ✓</div>
+          </div>
+          <div class="confirm-boleta" id="c-boleta-lt-row">
+            <div>
+              <div class="confirm-boleta-empresa">LaserTouch Ltda.</div>
+              <div style="font-size:13px;color:var(--text);font-weight:500" id="c-boleta-lt">Boleta insumos · <span id="c-lt-monto">$320.000</span></div>
+            </div>
+            <div class="confirm-boleta-estado">Enviada ✓</div>
+          </div>
+        </div>
+
+        <div class="confirm-wa"><span id="c-wa-lead">Las boletas fueron enviadas</span> a <strong id="c-email">tu correo</strong></div>
+
+        <div class="confirm-wa" id="c-pack-line" style="display:none;margin-top:8px"></div>
+
+        <div class="sc-note">Hoy y en cada etapa que viene, estamos preparando tu piel para los próximos años.</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" onclick="resetTotem()" style="background:var(--green2)">
+          Finalizar
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- CONDICIONES MODAL -->
+  <div class="modal-overlay" id="conditions-modal">
+    <div class="modal-box">
+      <div class="modal-title">Condiciones de Atención y Tratamiento de Datos</div>
+      <div class="modal-body">
+        <h4>Tus datos</h4>
+        <p>Tratamos tus datos personales y de salud para agendar, atenderte, hacer seguimiento, facturar y coordinar tu atención. Tus datos de salud son sensibles y se tratan con secreto profesional y confidencialidad.</p>
+        <h4>Tus derechos</h4>
+        <p>Puedes acceder, rectificar, cancelar, oponerte y portar tus datos en recepción. Algunos datos se conservan mientras la ley lo exige (ficha clínica y respaldos tributarios).</p>
+        <h4>Contacto</h4>
+        <p>Podemos contactarte por WhatsApp, correo, SMS o teléfono para confirmaciones, recordatorios e instrucciones de tu atención.</p>
+        <h4>Pagos</h4>
+        <p>Una misma atención puede generar más de una boleta, según la sociedad que corresponda: honorarios médicos, insumos y uso de tecnología láser, o pabellón y servicios.</p>
+        <h4>Imágenes</h4>
+        <p>Las fotografías clínicas forman parte de tu ficha y se tratan con la misma confidencialidad. Cualquier uso con fines de difusión requiere tu autorización específica.</p>
+        <h4>Importante</h4>
+        <p>Esta aceptación cubre las condiciones de atención y el tratamiento de tus datos. No reemplaza el consentimiento informado de cada procedimiento, que el médico te explicará y firmarás por separado.</p>
+        <div class="modal-note">Versión preliminar en revisión. Documento sujeto a validación.</div>
+      </div>
+      <button class="btn-primary" onclick="closeConditions()">Entendido</button>
+    </div>
+  </div>
+
+  <!-- CLARITA BAR -->
+  <div class="clarita-bar">
+    <span>¿Necesitas ayuda? Consulta en recepción.</span>
+    <div class="hclock" id="clock">--:--</div>
+  </div>
+
+</div><!-- /shell -->
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+//  CONEXIÓN SUPABASE
+//  ───────────────────────────────────────────────────────────────────────────
+//  La anon key ya está puesta (es la misma pública que usa gp-cola.html, segura
+//  para el navegador, protegida por grants + RLS). No hay que tocar nada aquí.
+//  Para producción: pon DEMO_FALLBACK en false (deja de reconocer RUTs de prueba).
+// ════════════════════════════════════════════════════════════════════════════
+const SUPABASE_URL      = 'https://nirxkzkfcctdigvuapuc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pcnhremtmY2N0ZGlndnVhcHVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDY5MTUsImV4cCI6MjA5NTEyMjkxNX0.iGTkHTRgdsEDoUsvS9ApQtSRAJV52z-_IASlFBmPqDM';
+const DEMO_FALLBACK     = true;  // ← déjalo en true para probar en el iPad; ponlo en false en producción
+const BOX_TOTEM         = 'recepcion';
+// La tabla pacientes en producción aún no tiene consent_version/consent_fecha.
+// El consentimiento funciona en sesión (el checkbox habilita continuar); cuando
+// agregues esas columnas (o una tabla consentimientos) pon esto en true.
+const PERSIST_CONSENT   = false;
+
+let sb = null;
+try {
+  if (window.supabase && SUPABASE_ANON_KEY && SUPABASE_ANON_KEY.indexOf('PEGA_AQUI') === -1) {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('[tótem] Supabase conectado');
+  } else {
+    console.warn('[tótem] Sin anon key → modo DEMO');
+  }
+} catch (e) { console.warn('[tótem] Supabase no inicializado:', e); }
+
+// Cache de empresas (id por tipo: honorarios=SkinTouch, insumos=LaserTouch)
+let empresasCache = null;
+async function getEmpresas() {
+  if (empresasCache) return empresasCache;
+  const map = {};
+  if (sb) {
+    try {
+      const { data } = await sb.from('empresas').select('id,nombre,tipo');
+      (data || []).forEach(e => {
+        if (e.tipo === 'honorarios' || /skin/i.test(e.nombre || '')) map.skintouch = e.id;
+        if (e.tipo === 'insumos'    || /laser/i.test(e.nombre || '')) map.lasertouch = e.id;
+      });
+    } catch (e) { console.warn('[tótem] empresas:', e); }
+  }
+  empresasCache = map;
+  return map;
+}
+
+// ── DATA MOCK (solo modo DEMO · DEMO_FALLBACK) ──
+const MOCK_PACIENTES = {
+  '12345678': {
+    nombre: 'María González Vega', nombre_short: 'María',
+    email: 'maria.gonzalez@gmail.com', telefono: '+56 9 8765 4321',
+    comuna: 'Vitacura', nac: '1990-05-12', consentVersion: null,
+    reserva: 95000, reembolsable: false,
+    presupuesto: {
+      skintouch: { concepto: 'Consulta + Honorario procedimiento Halo BBL', monto: 180000 },
+      lasertouch: { concepto: 'Insumos Halo BBL + Uso tecnología Sciton JOULE', monto: 320000 }
+    }
+  },
+  '98765432': {
+    nombre: 'Ana Martínez López', nombre_short: 'Ana',
+    email: 'ana.martinez@icloud.com', telefono: '+56 9 1234 5678',
+    comuna: 'Las Condes', nac: '1985-09-30', consentVersion: '0.1', consentFecha: '3 de marzo de 2026',
+    reserva: 95000, reembolsable: false,
+    presupuesto: {
+      skintouch: { concepto: 'Consulta + Honorario procedimiento BBL Hero', monto: 120000 },
+      lasertouch: { concepto: 'Insumos BBL Hero + Uso tecnología Sciton JOULE', monto: 230000 }
+    }
+  },
+  '22222222': {
+    nombre: 'Tomás Rojas Díaz', nombre_short: 'Tomás',
+    email: 'tomas.rojas@gmail.com', telefono: '+56 9 5555 1234',
+    comuna: 'Lo Barnechea', nac: '2010-04-20', consentVersion: null,
+    reserva: 95000, reembolsable: true,
+    presupuesto: {
+      skintouch: { concepto: 'Consulta dermatológica + Manejo de acné', monto: 130000 },
+      lasertouch: { concepto: 'Insumos tratamiento acné', monto: 60000 }
+    }
+  },
+  '33333333': {
+    nombre: 'Carolina Soto Vera', nombre_short: 'Carolina',
+    email: 'carolina.soto@gmail.com', telefono: '+56 9 7777 8888',
+    comuna: 'Vitacura', nac: '1979-02-14', consentVersion: null,
+    reserva: 95000, reembolsable: true,
+    presupuesto: { skintouch: { concepto: 'Consulta dermatológica', monto: 95000 } }
+  },
+  '44444444': {
+    nombre: 'Isidora Vial Errázuriz', nombre_short: 'Isidora',
+    email: 'isidora.vial@gmail.com', telefono: '+56 9 6543 2109',
+    comuna: 'Vitacura', nac: '1982-07-08', consentVersion: '0.1', consentFecha: '12 de abril de 2026',
+    reembolsable: true,
+    pack: { origen: 'Pack Blueprint', saldo: 1000000 },
+    presupuesto: {
+      skintouch: { concepto: 'Honorario procedimiento Láser BBL (rosácea)', monto: 190000 },
+      lasertouch: { concepto: 'Insumos + uso tecnología BBL', monto: 90000 }
+    }
+  }
+};
+
+const CONSENT_VERSION = '0.1';
+function edadDesde(nac) {
+  if (!nac) return 99;
+  const n = new Date(nac), hoy = new Date();
+  let e = hoy.getFullYear() - n.getFullYear();
+  const m = hoy.getMonth() - n.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < n.getDate())) e--;
+  return e;
+}
+
+let currentPaciente = null;
+let rawRut = '';
+let pagoSeleccionado = null;
+let saldoActual = 0;
+let saldoSkActual = 0;
+let saldoLtActual = 0;
+let apoderadoChannel = null;
+
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours().toString().padStart(2,'0');
+  const m = now.getMinutes().toString().padStart(2,'0');
+  document.getElementById('clock').textContent = h + ':' + m;
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+// ── FORMAT RUT ──
+function formatRut(input) {
+  let v = input.value.replace(/[^0-9kK]/g,'');
+  rawRut = v;
+  if (v.length > 1) {
+    const body = v.slice(0,-1);
+    const dv = v.slice(-1).toUpperCase();
+    const formatted = body.replace(/\B(?=(\d{3})+(?!\d))/g,'.') + '-' + dv;
+    input.value = formatted;
+  }
+  document.getElementById('btn-buscar').disabled = v.length < 7;
+  document.getElementById('rut-error').classList.remove('show');
+  input.classList.remove('error');
+}
+
+function rutKeydown(e) {
+  if (e.key === 'Enter') buscarPaciente();
+}
+
+// ── KEYPAD ──
+function keyPress(d) {
+  if (rawRut.length >= 9) return;
+  if (/[kK]/.test(rawRut)) return;              // el dígito verificador K es terminal: nada después
+  if (d === 'K' && rawRut.length === 0) return; // K no puede ir primero
+  rawRut += d;
+  rebuildRutInput();
+}
+
+function keyDel() {
+  if (rawRut.length === 0) return;
+  rawRut = rawRut.slice(0,-1);
+  rebuildRutInput();
+}
+
+function rebuildRutInput() {
+  const inp = document.getElementById('rut-input');
+  let v = rawRut;
+  if (v.length > 1) {
+    const body = v.slice(0,-1);
+    const dv = v.slice(-1).toUpperCase();
+    inp.value = body.replace(/\B(?=(\d{3})+(?!\d))/g,'.') + '-' + dv;
+  } else {
+    inp.value = v;
+  }
+  document.getElementById('btn-buscar').disabled = v.length < 7;
+  document.getElementById('rut-error').classList.remove('show');
+  inp.classList.remove('error');
+}
+
+// ── RUT canónico (con guión, como Medilink: cuerpo-DV) ──
+function rutCanonico(raw) {
+  const limpio = raw.replace(/[.\-\s]/g,'').toUpperCase();
+  if (limpio.length < 2) return limpio;
+  return limpio.slice(0,-1) + '-' + limpio.slice(-1);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  BUSCAR PACIENTE  (lee: pacientes + presupuestos + presupuesto_items + packs)
+// ════════════════════════════════════════════════════════════════════════════
+async function buscarPaciente() {
+  showLoading('Buscando tu ficha…');
+  const rut = rutCanonico(rawRut);
+  let paciente = null;
+
+  if (sb) {
+    try { paciente = await fetchPacienteReal(rut); }
+    catch (e) { console.warn('[tótem] consulta:', e); }
+  }
+  if (!paciente && DEMO_FALLBACK) {
+    const cuerpo = rawRut.replace(/[.\-\s]/g,'').toLowerCase().slice(0,-1).replace(/\D/g,'');
+    if (MOCK_PACIENTES[cuerpo]) paciente = adaptDemo(MOCK_PACIENTES[cuerpo], rut);
+  }
+
+  hideLoading();
+
+  if (!paciente) {
+    document.getElementById('rut-input').classList.add('error');
+    document.getElementById('rut-error').classList.add('show');
+    return;
+  }
+
+  currentPaciente = paciente;
+  populateScreen2(paciente);
+  populateScreen3(paciente);
+  goScreen(2);
+}
+
+function adaptDemo(p, rut) {
+  return Object.assign({}, p, { rut: rut, presupuesto_id: null, _demo: true,
+    glosaConcat: (p.presupuesto.skintouch ? p.presupuesto.skintouch.concepto : '') });
+}
+
+async function fetchPacienteReal(rut) {
+  // 1) Ficha del paciente (sincronizada desde Medilink, key = rut canónico).
+  //    select('*') = tolerante al esquema real: trae las columnas que existan,
+  //    sin romperse si alguna (consent_version, etc.) aún no está en la tabla.
+  const { data: pac, error: e1 } = await sb.from('pacientes')
+    .select('*')
+    .eq('rut', rut).limit(1).maybeSingle();
+  if (e1) throw e1;
+  if (!pac) return null;
+
+  // 2) Presupuesto activo del día (lo deja Clarita al confirmar la hora, o el Dr. post-consulta)
+  const { data: pres } = await sb.from('presupuestos')
+    .select('id,reserva,total,saldo,estado,fecha')
+    .eq('paciente_rut', rut).in('estado', ['borrador','aceptado'])
+    .order('fecha', { ascending: false }).limit(1).maybeSingle();
+
+  // 3) Ítems del presupuesto, con su prestación (nombre + indicación + reembolsable)
+  let items = [];
+  if (pres) {
+    const { data: it } = await sb.from('presupuesto_items')
+      .select('honorario_monto,insumo_monto,reembolsable,prestaciones(nombre,indicacion)')
+      .eq('presupuesto_id', pres.id);
+    items = it || [];
+  }
+
+  // 4) Pack con saldo (anticipo prepagado)
+  const { data: pk } = await sb.from('packs')
+    .select('id,origen,saldo')
+    .eq('paciente_rut', rut).gt('saldo', 0)
+    .order('fecha_compra', { ascending: false }).limit(1).maybeSingle();
+
+  return buildPaciente(pac, pres, items, pk, rut);
+}
+
+// Adapta los datos reales a la forma que ya consumen las pantallas 2 y 3
+function buildPaciente(pac, pres, items, pk, rut) {
+  const honorarioTotal = items.reduce((s,i)=>s+(i.honorario_monto||0),0);
+  const insumoTotal    = items.reduce((s,i)=>s+(i.insumo_monto||0),0);
+  const glosa = items.map(i => {
+    const pr = i.prestaciones || {};
+    return pr.nombre ? (pr.nombre + (pr.indicacion ? ' · ' + pr.indicacion : '')) : '';
+  }).filter(Boolean).join(' + ');
+  // El honorario es reembolsable si alguna prestación del presupuesto lo es
+  // (el desglose fino por boleta lo resuelve Bsale aguas abajo).
+  const reembolsable = items.some(i => i.reembolsable);
+
+  const nombreCompleto = [pac.nombre, pac.apellido, pac.apellido2].filter(Boolean).join(' ');
+  const o = {
+    rut: rut,
+    presupuesto_id: pres ? pres.id : null,
+    nombre: nombreCompleto || pac.nombre || '—',
+    nombre_short: pac.nombre ? pac.nombre.split(' ')[0] : 'Hola',
+    email: pac.email || '—',
+    telefono: pac.tel || pac.telefono || pac.celular || pac.movil || '—',
+    comuna: pac.comuna || '—',
+    nac: pac.fecha_nac || pac.nac || null,
+    consentVersion: pac.consent_version || null,
+    consentFecha: fmtFecha(pac.consent_fecha),
+    reserva: pres ? (pres.reserva || 0) : 0,
+    reembolsable: reembolsable,
+    glosaConcat: glosa,
+    presupuesto: {},
+    _demo: false,
+    _sinPresupuesto: !pres
+  };
+  if (honorarioTotal > 0) {
+    o.presupuesto.skintouch = { concepto: glosa || 'Atención médica', monto: honorarioTotal };
+  }
+  if (insumoTotal > 0) {
+    o.presupuesto.lasertouch = { concepto: glosa || 'Insumos + tecnología', monto: insumoTotal };
+  }
+  // Presupuesto con totales pero sin ítems detallados → un solo honorario
+  if (!honorarioTotal && !insumoTotal && pres && (pres.total || 0) > 0) {
+    o.presupuesto.skintouch = { concepto: 'Atención', monto: pres.total };
+  }
+  if (pk) o.pack = { origen: pk.origen, saldo: pk.saldo, id: pk.id };
+  return o;
+}
+
+function populateScreen2(p) {
+  document.getElementById('d-greet').textContent    = p.nombre_short;
+  document.getElementById('d-nombre').textContent   = p.nombre;
+  document.getElementById('d-email').textContent    = p.email;
+  document.getElementById('d-telefono').textContent = p.telefono;
+  document.getElementById('d-comuna').textContent   = p.comuna;
+
+  const block = document.getElementById('consent-block');
+  const done  = document.getElementById('consent-done');
+  const minor = document.getElementById('minor-notice');
+  const btn   = document.getElementById('btn-continuar2');
+  document.getElementById('consent-check').checked = false;
+  block.style.display = 'none';
+  done.style.display  = 'none';
+  minor.style.display = 'none';
+  document.getElementById('minor-habilitado').style.display = 'none';
+
+  if (edadDesde(p.nac) < 18) {
+    // Menor: la aceptación la hace el apoderado en recepción (vía Clarita)
+    minor.style.display = 'block';
+    btn.disabled = true;
+    const demoBtn = minor.querySelector('.demo-btn');
+    if (sb && !p._demo) {
+      if (demoBtn) demoBtn.style.display = 'none';
+      crearAccionApoderado();            // crea la acción y escucha por Realtime
+    } else {
+      if (demoBtn) demoBtn.style.display = 'inline-block';  // modo demo
+    }
+  } else if (p.consentVersion === CONSENT_VERSION) {
+    document.getElementById('consent-done-fecha').textContent = p.consentFecha || '—';
+    done.style.display = 'block';
+    btn.disabled = false;
+  } else {
+    block.style.display = 'block';
+    btn.disabled = true;
+  }
+}
+
+function presupCard(empresa, sub, concepto, monto, iva, color) {
+  return '<div class="presup-card">'
+       + '<div class="presup-vert" style="background:' + color + '"></div>'
+       + '<div class="presup-body">'
+       + '<div class="presup-empresa">' + empresa + ' · ' + sub + '</div>'
+       + '<div class="presup-concepto">' + concepto + '</div>'
+       + '<div><span class="presup-monto">' + formatCLP(monto) + '</span>'
+       + '<span class="presup-iva">' + iva + '</span></div>'
+       + '</div></div>';
+}
+
+function populateScreen3(p) {
+  const btnPresup = document.getElementById('btn-presup');
+
+  // Sin presupuesto preparado → aviso y derivación a Clarita
+  if (p._sinPresupuesto && !p.presupuesto.skintouch && !p.presupuesto.lasertouch) {
+    document.getElementById('presup-cards').innerHTML =
+      '<div class="presup-aviso">'
+      + '<div class="presup-aviso-title">Estamos preparando tu plan</div>'
+      + '<div class="presup-aviso-text">Clarita está finalizando el detalle de tu atención de hoy. '
+      + 'Te acompañará en un momento para continuar.</div></div>';
+    document.getElementById('presup-total').innerHTML = '';
+    saldoActual = 0; saldoSkActual = 0; saldoLtActual = 0;
+    btnPresup.textContent = 'Avísale a Clarita';
+    btnPresup.onclick = function(){ llamarClarita('presupuesto'); };
+    syncConfirmacion(p, null);
+    return;
+  }
+  btnPresup.onclick = aceptarPresupuesto;
+
+  const sk = p.presupuesto.skintouch;
+  const lt = p.presupuesto.lasertouch || null;
+  const total = (sk ? sk.monto : 0) + (lt ? lt.monto : 0);
+
+  let cards = '';
+  if (sk) cards += presupCard('SkinTouch SpA', 'Honorarios médicos', sk.concepto, sk.monto, 'Exento IVA', '#534AB7');
+  if (lt) cards += presupCard('LaserTouch Ltda.', 'Insumos + Tecnología', lt.concepto, lt.monto, 'IVA incluido', '#1D9E75');
+  document.getElementById('presup-cards').innerHTML = cards;
+
+  let saldoSk, saldoLt, html;
+  if (p.pack) {
+    const packAntes = p.pack.saldo;
+    const descuento = total;
+    const packDespues = packAntes - descuento;
+    const aPagar = Math.max(0, descuento - packAntes);
+    saldoActual = aPagar; saldoSk = aPagar; saldoLt = 0;
+    html =
+      '<div class="presup-total-row"><span class="presup-total-label">Total de tu atención</span><span class="presup-total-sub">' + formatCLP(total) + '</span></div>'
+    + '<div class="presup-total-row presup-reserva"><span>Saldo de tu Pack</span><span>' + formatCLP(packAntes) + '</span></div>'
+    + '<div class="presup-total-row presup-reserva"><span>Se descuenta hoy</span><span>− ' + formatCLP(descuento) + '</span></div>'
+    + '<div class="presup-total-row presup-reserva"><span>Saldo restante del Pack</span><span>' + formatCLP(Math.max(0, packDespues)) + '</span></div>'
+    + '<div class="presup-total-row presup-saldo"><span class="presup-total-label">A pagar hoy</span><span class="presup-total-monto">' + formatCLP(aPagar) + '</span></div>'
+    + '<div class="presup-saldo-msg" style="display:block">Este monto se descuenta de tu Pack' + (p.pack.origen ? ' · ' + p.pack.origen : '') + '.</div>';
+  } else {
+    const reserva = p.reserva || 0;
+    saldoSk = Math.max(0, (sk ? sk.monto : 0) - reserva);
+    saldoLt = lt ? lt.monto : 0;
+    const saldo = saldoSk + saldoLt;
+    saldoActual = saldo;
+    html =
+      '<div class="presup-total-row"><span class="presup-total-label">Total de tu atención</span><span class="presup-total-sub">' + formatCLP(total) + '</span></div>'
+    + '<div class="presup-total-row presup-reserva"><span>Reserva ya pagada</span><span>− ' + formatCLP(reserva) + '</span></div>'
+    + '<div class="presup-total-row presup-saldo"><span class="presup-total-label">Saldo a pagar hoy</span><span class="presup-total-monto">' + formatCLP(saldo) + '</span></div>'
+    + (saldo <= 0 ? '<div class="presup-saldo-msg" style="display:block">No tienes saldo por pagar hoy. Tu honorario ya está cubierto por tu reserva.</div>' : '');
+  }
+  document.getElementById('presup-total').innerHTML = html;
+
+  saldoSkActual = saldoSk;
+  saldoLtActual = saldoLt;
+
+  btnPresup.textContent = (saldoActual <= 0) ? 'Confirmar mi atención ✓' : 'Acepto el presupuesto ✓';
+
+  document.getElementById('pago-saldo-monto').textContent = formatCLP(saldoActual);
+  buildPagoSteps(saldoSk, saldoLt);
+
+  syncConfirmacion(p, { sk: sk, lt: lt, total: total });
+}
+
+function syncConfirmacion(p, plan) {
+  document.getElementById('c-nombre-short').textContent = p.nombre_short;
+  document.getElementById('c-email').textContent        = p.email;
+  const lt = plan ? plan.lt : null;
+  const sk = plan ? plan.sk : null;
+  document.getElementById('c-sk-monto').textContent = formatCLP(sk ? sk.monto : 0);
+  document.getElementById('c-sk-label').textContent = p.reembolsable ? 'Boleta honorarios (reembolsable)' : 'Boleta honorarios';
+  document.getElementById('c-wa-lead').textContent  = lt ? 'Las boletas fueron enviadas' : 'Tu boleta fue enviada';
+  document.getElementById('c-boleta-lt-row').style.display = lt ? 'flex' : 'none';
+  if (lt) document.getElementById('c-lt-monto').textContent = formatCLP(lt.monto);
+
+  const packLine = document.getElementById('c-pack-line');
+  if (p.pack && plan) {
+    const restante = Math.max(0, p.pack.saldo - plan.total);
+    packLine.innerHTML = 'Descontado de tu Pack · Saldo restante: <strong>' + formatCLP(restante) + '</strong>';
+    packLine.style.display = 'block';
+  } else {
+    packLine.style.display = 'none';
+  }
+}
+
+function aceptarPresupuesto() {
+  if (saldoActual <= 0) {
+    confirmarAtencion('confirmacion');   // consulta cubierta o pack $0
+  } else {
+    goScreen(4);
+  }
+}
+
+function pasoHTML(num, texto) {
+  return '<div class="pago-step"><div class="pago-step-num">' + num + '</div>'
+       + '<div class="pago-step-text">' + texto + '</div></div>';
+}
+
+const QR_SVG = '<svg viewBox="0 0 116 116" xmlns="http://www.w3.org/2000/svg"><rect width="116" height="116" fill="#fff"/><g fill="#1C2B1E"><rect x="8" y="8" width="28" height="28"/><rect x="14" y="14" width="16" height="16" fill="#fff"/><rect x="18" y="18" width="8" height="8"/><rect x="80" y="8" width="28" height="28"/><rect x="86" y="14" width="16" height="16" fill="#fff"/><rect x="90" y="18" width="8" height="8"/><rect x="8" y="80" width="28" height="28"/><rect x="14" y="86" width="16" height="16" fill="#fff"/><rect x="18" y="90" width="8" height="8"/><rect x="44" y="8" width="8" height="8"/><rect x="60" y="16" width="8" height="8"/><rect x="44" y="24" width="8" height="8"/><rect x="8" y="44" width="8" height="8"/><rect x="24" y="44" width="8" height="8"/><rect x="40" y="44" width="8" height="8"/><rect x="56" y="44" width="8" height="8"/><rect x="72" y="44" width="8" height="8"/><rect x="88" y="44" width="8" height="8"/><rect x="48" y="56" width="8" height="8"/><rect x="64" y="56" width="8" height="8"/><rect x="80" y="60" width="8" height="8"/><rect x="44" y="72" width="8" height="8"/><rect x="60" y="72" width="8" height="8"/><rect x="92" y="72" width="8" height="8"/><rect x="48" y="88" width="8" height="8"/><rect x="64" y="92" width="8" height="8"/><rect x="80" y="84" width="8" height="8"/><rect x="92" y="92" width="8" height="8"/></g></svg>';
+function webpayQR(empresa, monto) {
+  return '<div class="webpay-qr">' + QR_SVG
+       + '<div class="webpay-qr-empresa">' + empresa + '</div>'
+       + '<div class="webpay-qr-monto">' + monto + '</div></div>';
+}
+
+function buildPagoSteps(saldoSk, saldoLt) {
+  const sk = formatCLP(saldoSk), lt = formatCLP(saldoLt);
+  const nBoletas = (saldoSk > 0 ? 1 : 0) + (saldoLt > 0 ? 1 : 0);
+
+  let t = '', n = 0;
+  if (saldoSk > 0) t += pasoHTML(++n, 'Dirígete al terminal <strong style="color:#2563EB">azul</strong> de <strong>SkinTouch</strong> y cancela <strong>' + sk + '</strong> — honorarios médicos');
+  if (saldoLt > 0) t += pasoHTML(++n, (saldoSk > 0 ? 'Luego, usa' : 'Usa') + ' el terminal <strong style="color:#C0392B">rojo</strong> de <strong>LaserTouch</strong> y cancela <strong>' + lt + '</strong> — insumos y tecnología');
+  t += pasoHTML(++n, nBoletas > 1
+      ? 'Tus <strong>boletas electrónicas</strong> llegarán a tu correo automáticamente'
+      : 'Tu <strong>boleta electrónica</strong> llegará a tu correo automáticamente');
+  document.getElementById('instr-tarjeta').innerHTML = t;
+
+  let q = '<div class="webpay-qrs">';
+  if (saldoSk > 0) q += webpayQR('SkinTouch', sk);
+  if (saldoLt > 0) q += webpayQR('LaserTouch', lt);
+  q += '</div><div class="webpay-note">Escanea el QR de cada empresa con la cámara de tu teléfono y paga con WebPay. '
+     + (nBoletas > 1 ? 'Tus boletas llegarán' : 'Tu boleta llegará') + ' a tu correo.</div>';
+  document.getElementById('instr-webpay').innerHTML = q;
+
+  let f = '', m = 0;
+  if (saldoSk > 0) f += pasoHTML(++m, 'Transfiere <strong>' + sk + '</strong> a <strong>SkinTouch SpA</strong> — Clarita te entregará los datos de cuenta');
+  if (saldoLt > 0) f += pasoHTML(++m, 'Transfiere <strong>' + lt + '</strong> a <strong>LaserTouch Ltda.</strong> — Clarita te entregará los datos de cuenta');
+  f += pasoHTML(++m, 'Clarita confirmará la recepción y ' + (nBoletas > 1 ? 'tus boletas llegarán' : 'tu boleta llegará') + ' por correo');
+  document.getElementById('instr-transferencia').innerHTML = f;
+}
+
+// ── PAGO ──
+function selectPago(tipo) {
+  pagoSeleccionado = tipo;
+  ['tarjeta','webpay','transferencia'].forEach(function(t){
+    document.getElementById('opt-'+t).classList.toggle('selected', tipo===t);
+    document.getElementById('instr-'+t).classList.toggle('show', tipo===t);
+  });
+  document.getElementById('btn-confirmar-pago').disabled = false;
+}
+
+async function confirmarPago() {
+  showLoading('Registrando tu pago…');
+  await registrarSesion('esperando_pago');
+  hideLoading();
+  goScreen(5);
+}
+
+async function confirmarAtencion(estado) {
+  showLoading('Confirmando tu atención…');
+  await registrarSesion(estado);
+  hideLoading();
+  goScreen(5);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  REGISTRAR SESIÓN  (escribe: totem_sesiones + clarita_acciones con detalle JSON)
+//  Esto aterriza en v_clarita_pendientes → cola de Clarita en vivo.
+//  Los cobros y boletas los emite Clarita al confirmar en gp-cola (lee el detalle).
+// ════════════════════════════════════════════════════════════════════════════
+async function registrarSesion(estadoFinal) {
+  if (!sb || !currentPaciente || !currentPaciente.presupuesto_id) return null;  // modo demo → no escribe
+  const p = currentPaciente;
+  const sk = p.presupuesto.skintouch ? p.presupuesto.skintouch.monto : 0;
+  const lt = p.presupuesto.lasertouch ? p.presupuesto.lasertouch.monto : 0;
+  const venceISO = new Date(Date.now() + 10*60*1000).toISOString();   // 10 min para la cola
+
+  try {
+    // 1) Sesión del tótem
+    const { data: ses, error: eSes } = await sb.from('totem_sesiones').insert({
+      paciente_rut: p.rut,
+      presupuesto_id: p.presupuesto_id,
+      estado: estadoFinal,                       // 'esperando_pago' | 'confirmacion'
+      medio_pago: pagoSeleccionado || null,
+      requiere_clarita: true,
+      expira: venceISO
+    }).select('id').single();
+    if (eSes) { console.warn('[tótem] totem_sesiones:', eSes); return null; }
+    const sesionId = ses.id;
+
+    // 2) Acción para la cola de Clarita. El detalle JSON es lo que gp-cola lee
+    //    (honorario, insumo, descripcion, reembolsable, nombre).
+    const { error: eAcc } = await sb.from('clarita_acciones').insert({
+      sesion_id: sesionId,
+      paciente_rut: p.rut,
+      tipo: 'pago',
+      estado: 'pendiente',
+      canal: 'totem',
+      vence_at: venceISO,
+      detalle: {
+        nombre: p.nombre,
+        descripcion: p.glosaConcat || 'Atención',
+        honorario: sk,
+        insumo: lt,
+        reembolsable: !!p.reembolsable,
+        medio_pago: pagoSeleccionado || null,
+        saldo: saldoActual,
+        pack: p.pack ? { id: p.pack.id, origen: p.pack.origen } : null
+      }
+    });
+    if (eAcc) console.warn('[tótem] clarita_acciones:', eAcc);
+
+    // 3) Presupuesto → aceptado (Clarita lo cierra a 'pagado' al confirmar)
+    await sb.from('presupuestos').update({ estado: 'aceptado' }).eq('id', p.presupuesto_id);
+
+    return sesionId;
+  } catch (e) {
+    console.warn('[tótem] registrarSesion:', e);
+    return null;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  MENOR DE EDAD  (escribe clarita_accion 'apoderado' y espera resolución vía Realtime)
+// ════════════════════════════════════════════════════════════════════════════
+async function crearAccionApoderado() {
+  if (!sb || !currentPaciente) return;
+  const p = currentPaciente;
+  const venceISO = new Date(Date.now() + 10*60*1000).toISOString();
+  try {
+    const { data: ses } = await sb.from('totem_sesiones').insert({
+      paciente_rut: p.rut,
+      presupuesto_id: p.presupuesto_id || null,
+      estado: 'esperando_apoderado',
+      requiere_clarita: true,
+      expira: venceISO
+    }).select('id').single();
+
+    const { data: acc, error: eAcc } = await sb.from('clarita_acciones').insert({
+      sesion_id: ses ? ses.id : null,
+      paciente_rut: p.rut,
+      tipo: 'apoderado',
+      estado: 'pendiente',
+      canal: 'totem',
+      vence_at: venceISO,
+      detalle: {
+        nombre: p.nombre,
+        motivo: 'Menor de edad · ' + (p.glosaConcat || 'requiere aprobación del apoderado presente')
+      }
+    }).select('id').single();
+    if (eAcc) { console.warn('[tótem] accion apoderado:', eAcc); return; }
+
+    if (apoderadoChannel) { try { sb.removeChannel(apoderadoChannel); } catch(e){} }
+    apoderadoChannel = sb.channel('apoderado-' + acc.id)
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'clarita_acciones', filter: 'id=eq.' + acc.id },
+        function(payload){
+          if (!payload.new) return;
+          if (payload.new.estado === 'aprobado') onApoderadoResuelto();
+          else if (payload.new.estado === 'rechazado') onApoderadoRechazado();
+        })
+      .subscribe();
+  } catch (e) { console.warn('[tótem] crearAccionApoderado:', e); }
+}
+
+function onApoderadoResuelto() {
+  document.getElementById('minor-notice').style.display = 'none';
+  document.getElementById('minor-nombre').textContent = currentPaciente ? currentPaciente.nombre_short : '';
+  document.getElementById('minor-habilitado').style.display = 'block';
+  document.getElementById('btn-continuar2').disabled = false;
+  if (apoderadoChannel) { try { sb.removeChannel(apoderadoChannel); } catch(e){} apoderadoChannel = null; }
+}
+
+function onApoderadoRechazado() {
+  showToast('Recepción no pudo habilitar la continuación. Acércate a Clarita.');
+  if (apoderadoChannel) { try { sb.removeChannel(apoderadoChannel); } catch(e){} apoderadoChannel = null; }
+}
+
+// ── NAVEGACIÓN ──
+function toggleConsent() {
+  document.getElementById('btn-continuar2').disabled = !document.getElementById('consent-check').checked;
+}
+
+// (demo) Clarita habilita al menor — solo activo en modo DEMO
+function habilitarMenor() {
+  onApoderadoResuelto();
+}
+
+async function continuarDatos() {
+  // Persistir la aceptación de condiciones (solo si PERSIST_CONSENT y paciente mayor real)
+  if (PERSIST_CONSENT && sb && currentPaciente && !currentPaciente._demo) {
+    const chk = document.getElementById('consent-check');
+    if (chk && chk.checked && currentPaciente.consentVersion !== CONSENT_VERSION) {
+      try {
+        await sb.from('pacientes').update({
+          consent_version: CONSENT_VERSION,
+          consent_fecha: new Date().toISOString()
+        }).eq('rut', currentPaciente.rut);
+        currentPaciente.consentVersion = CONSENT_VERSION;
+      } catch (e) { console.warn('[tótem] consent:', e); }
+    }
+  }
+  goScreen(3);
+}
+
+function openConditions()  { document.getElementById('conditions-modal').classList.add('show'); }
+function closeConditions() { document.getElementById('conditions-modal').classList.remove('show'); }
+
+function goScreen(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + n).classList.add('active');
+  updateSteps(n);
+  if (n !== 4) {
+    pagoSeleccionado = null;
+    ['tarjeta','webpay','transferencia'].forEach(function(t){
+      document.getElementById('opt-'+t).classList.remove('selected');
+      document.getElementById('instr-'+t).classList.remove('show');
+    });
+    document.getElementById('btn-confirmar-pago').disabled = true;
+  }
+}
+
+function updateSteps(active) {
+  for (let i = 1; i <= 5; i++) {
+    const circle = document.getElementById('sc'+i);
+    const label  = document.getElementById('sl'+i);
+    circle.classList.remove('active','done');
+    label.classList.remove('active');
+    if (i < active) { circle.classList.add('done'); circle.textContent = '✓'; }
+    else if (i === active) { circle.classList.add('active'); circle.textContent = i; label.classList.add('active'); }
+    else { circle.textContent = i; }
+  }
+}
+
+function resetTotem() {
+  if (apoderadoChannel) { try { sb.removeChannel(apoderadoChannel); } catch(e){} apoderadoChannel = null; }
+  currentPaciente = null;
+  rawRut = '';
+  saldoActual = 0; saldoSkActual = 0; saldoLtActual = 0;
+  pagoSeleccionado = null;
+  document.getElementById('rut-input').value = '';
+  document.getElementById('rut-input').classList.remove('error');
+  document.getElementById('rut-error').classList.remove('show');
+  document.getElementById('btn-buscar').disabled = true;
+  goScreen(1);
+}
+
+// ── CLARITA ──
+function llamarClarita(motivo) {
+  const msgs = {
+    datos: 'Avisamos a Clarita: viene a ayudarte a corregir un dato de tu ficha.',
+    presupuesto: 'Avisamos a Clarita: viene a resolver tu duda sobre el presupuesto.',
+    general: 'Avisamos a Clarita: viene a ayudarte en un momento.'
+  };
+  // Clarita está en la misma sala de espera: el aviso es presencial.
+  // (Próximo paso opcional: tipo 'ayuda' en clarita_acciones para que entre como tarjeta a la cola.)
+  showToast(msgs[motivo] || msgs.general);
+}
+
+// ── HELPERS ──
+function formatCLP(n) { return '$' + (n||0).toLocaleString('es-CL'); }
+function fmtFecha(iso) {
+  if (!iso) return null;
+  try {
+    return new Date(iso).toLocaleDateString('es-CL', { day:'numeric', month:'long', year:'numeric' });
+  } catch (e) { return null; }
+}
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+function showLoading(txt) {
+  document.getElementById('loading-text').textContent = txt;
+  document.getElementById('loading').classList.add('show');
+}
+function hideLoading() { document.getElementById('loading').classList.remove('show'); }
+let _toastTimer = null;
+function showToast(txt) {
+  const t = document.getElementById('toast');
+  t.textContent = txt;
+  t.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 3400);
+}
+</script>
+</body>
+</html>
