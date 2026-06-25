@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prueba enganche cola · Transbank Sandbox</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--crema:#f4efe7;--crema2:#fbf8f2;--verde:#1f3d34;--verde2:#2c5446;
+    --tinta:#26201a;--suave:#8a8076;--linea:#e3dccf}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--crema);color:var(--tinta);font-family:'Inter',sans-serif;
+    line-height:1.5;padding:24px;display:flex;justify-content:center}
+  .wrap{max-width:480px;width:100%}
+  h1{font-family:'Playfair Display',serif;font-weight:600;color:var(--verde);font-size:24px;margin:0 0 4px}
+  .sub{color:var(--suave);font-size:14px;margin:0 0 22px}
+  .card{background:var(--crema2);border:1px solid var(--linea);border-radius:16px;padding:22px;margin-bottom:16px}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:15px}
+  .row .emp{font-weight:600}
+  .row .det{font-size:12px;color:var(--suave);font-weight:400;display:block;margin-top:1px}
+  .row .mo{font-family:ui-monospace,monospace}
+  .tot{border-top:1px solid var(--linea);margin-top:6px;padding-top:12px;font-weight:600}
+  .pasos{font-size:13px;color:var(--tinta);background:#fff;border:1px solid var(--linea);border-radius:10px;padding:14px 16px;line-height:1.7;margin-bottom:14px}
+  .pasos b{color:var(--verde)}
+  button{width:100%;font-family:inherit;font-size:15px;font-weight:600;border-radius:12px;
+    padding:15px;border:1px solid var(--verde);background:var(--verde);color:#fff;cursor:pointer;margin-top:4px}
+  button:active{background:var(--verde2)}
+  button:disabled{opacity:.5}
+  #msg{font-family:ui-monospace,monospace;font-size:12.5px;margin-top:14px;color:var(--suave);
+    white-space:pre-wrap;word-break:break-word}
+  details{font-size:13px}
+  summary{cursor:pointer;color:var(--verde);font-weight:500;margin-bottom:8px}
+  .tarj{background:#fff;border:1px solid var(--linea);border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.7}
+  .tarj b{font-family:ui-monospace,monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Prueba enganche · cola de Clarita</h1>
+  <p class="sub">El pago WebPay cierra la tarjeta solo · sandbox</p>
+
+  <div class="pasos">
+    <b>Para ver el cierre en vivo:</b> abre <b>gp-cola.html</b> en otra pestaña.
+    Al tocar "Pagar" aparece una tarjeta de prueba en la cola; al terminar de pagar las dos
+    empresas, esa tarjeta <b>desaparece sola</b> (pasa a aprobado).
+  </div>
+
+  <div class="card">
+    <div class="row"><span class="emp">SkinTouch<span class="det">Honorario · exento</span></span><span class="mo">$95.000</span></div>
+    <div class="row"><span class="emp">LaserTouch<span class="det">Insumos · IVA incl.</span></span><span class="mo">$45.000</span></div>
+    <div class="row tot"><span>Total</span><span class="mo">$140.000</span></div>
+    <button id="btn" onclick="cobrar()">Crear tarjeta y pagar</button>
+    <div id="msg"></div>
+  </div>
+
+  <details>
+    <summary>Datos de la tarjeta de prueba</summary>
+    <div class="tarj">
+      VISA (aprueba): <b>4051 8856 0044 6623</b> · CVV <b>123</b> · fecha futura<br>
+      Autenticación: RUT <b>11.111.111-1</b> · Clave <b>123</b><br><br>
+      Pagas dos veces: SkinTouch y luego, con el botón, LaserTouch.
+    </div>
+  </details>
+</div>
+
+<script>
+const SB_URL = 'https://nirxkzkfcctdigvuapuc.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pcnhremtmY2N0ZGlndnVhcHVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDY5MTUsImV4cCI6MjA5NTEyMjkxNX0.iGTkHTRgdsEDoUsvS9ApQtSRAJV52z-_IASlFBmPqDM';
+
+async function cobrar(){
+  const btn = document.getElementById('btn');
+  const msg = document.getElementById('msg');
+  btn.disabled = true; msg.textContent = 'Creando tarjeta en la cola…';
+
+  const honorario = 95000, insumo = 45000;
+  const grupo = 'G-' + Date.now();
+
+  try {
+    // 1) Crear la tarjeta de prueba en la cola de Clarita (clarita_acciones)
+    const ins = await fetch(SB_URL + '/rest/v1/clarita_acciones', {
+      method: 'POST',
+      headers: {
+        apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json', Prefer: 'return=representation'
+      },
+      body: JSON.stringify({
+        paciente_rut: '0-0', tipo: 'pago', estado: 'pendiente', canal: 'totem',
+        detalle: { nombre: 'PRUEBA ENGANCHE', descripcion: 'Consulta + procedimiento',
+                   honorario: honorario, insumo: insumo, reembolsable: true }
+      })
+    });
+    const accArr = await ins.json();
+    const accion_id = (Array.isArray(accArr) && accArr[0]) ? accArr[0].id : null;
+    if (!accion_id) { msg.textContent = 'No se pudo crear la tarjeta: ' + JSON.stringify(accArr); btn.disabled = false; return; }
+
+    msg.textContent = 'Tarjeta #' + accion_id + ' creada. Iniciando pago…';
+
+    // 2) Armar legs y crear el primer pago, pasando el enganche (accion_id)
+    const legs = [
+      { empresa: 'skintouch',  monto: honorario, concepto: 'Honorario (prueba)' },
+      { empresa: 'lasertouch', monto: insumo,    concepto: 'Insumos (prueba)' }
+    ].filter(function(l){ return l.monto > 0; });
+
+    const first = legs[0];
+    const r = await fetch('/api/transbank-crear', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        empresa: first.empresa, monto: first.monto, concepto: first.concepto,
+        paciente_rut: '0-0', grupo: grupo, pendientes: legs.slice(1),
+        accion_id: accion_id
+      })
+    });
+    const data = await r.json();
+    if (!data.url || !data.token) { msg.textContent = 'Error: ' + JSON.stringify(data, null, 2); btn.disabled = false; return; }
+
+    const f = document.createElement('form');
+    f.method = 'POST'; f.action = data.url;
+    const i = document.createElement('input');
+    i.type = 'hidden'; i.name = 'token_ws'; i.value = data.token;
+    f.appendChild(i); document.body.appendChild(f); f.submit();
+  } catch (e) {
+    msg.textContent = 'Error: ' + (e.message || e); btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
