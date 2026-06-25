@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prueba Transbank · Sandbox</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--crema:#f4efe7;--crema2:#fbf8f2;--verde:#1f3d34;--verde2:#2c5446;
+    --tinta:#26201a;--suave:#8a8076;--linea:#e3dccf;--mal:#b23b3b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--crema);color:var(--tinta);font-family:'Inter',sans-serif;
+    line-height:1.5;padding:24px;display:flex;justify-content:center}
+  .wrap{max-width:480px;width:100%}
+  h1{font-family:'Playfair Display',serif;font-weight:600;color:var(--verde);font-size:24px;margin:0 0 4px}
+  .sub{color:var(--suave);font-size:14px;margin:0 0 22px}
+  .card{background:var(--crema2);border:1px solid var(--linea);border-radius:16px;padding:22px;margin-bottom:16px}
+  .monto{font-family:'Playfair Display',serif;font-size:34px;color:var(--tinta);margin:0 0 2px}
+  .det{font-size:13px;color:var(--suave);margin:0 0 18px}
+  button{width:100%;font-family:inherit;font-size:15px;font-weight:600;border-radius:12px;
+    padding:15px;border:1px solid var(--verde);background:var(--verde);color:#fff;cursor:pointer}
+  button:active{background:var(--verde2)}
+  button:disabled{opacity:.5}
+  #msg{font-family:ui-monospace,monospace;font-size:12.5px;margin-top:14px;color:var(--suave);
+    white-space:pre-wrap;word-break:break-word}
+  details{font-size:13px;color:var(--tinta)}
+  summary{cursor:pointer;color:var(--verde);font-weight:500;margin-bottom:8px}
+  .tarj{background:#fff;border:1px solid var(--linea);border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.7}
+  .tarj b{font-family:ui-monospace,monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Prueba Transbank · Sandbox</h1>
+  <p class="sub">Ambiente de integración · sin dinero real</p>
+
+  <div class="card">
+    <p class="monto">$95.000</p>
+    <p class="det">Reserva de hora · SkinTouch · paciente de prueba 0-0</p>
+    <button id="btn" onclick="cobrar()">Pagar reserva con WebPay</button>
+    <div id="msg"></div>
+  </div>
+
+  <details>
+    <summary>Datos de la tarjeta de prueba</summary>
+    <div class="tarj">
+      Tarjeta VISA (aprueba): <b>4051 8856 0044 6623</b><br>
+      CVV: <b>123</b> · Vencimiento: cualquiera futura<br>
+      Luego, autenticación bancaria:<br>
+      RUT: <b>11.111.111-1</b> · Clave: <b>123</b>
+    </div>
+  </details>
+</div>
+
+<script>
+async function cobrar(){
+  const btn = document.getElementById('btn');
+  const msg = document.getElementById('msg');
+  btn.disabled = true; msg.textContent = 'Creando transacción…';
+  try {
+    const r = await fetch('/api/transbank-crear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ empresa:'skintouch', monto:95000, paciente_rut:'0-0', concepto:'Reserva de hora (prueba)' })
+    });
+    const data = await r.json();
+    if (!data.url || !data.token) { msg.textContent = 'Error: ' + JSON.stringify(data, null, 2); btn.disabled = false; return; }
+    // Redirigir a Webpay vía POST con token_ws
+    const f = document.createElement('form');
+    f.method = 'POST'; f.action = data.url;
+    const i = document.createElement('input');
+    i.type = 'hidden'; i.name = 'token_ws'; i.value = data.token;
+    f.appendChild(i); document.body.appendChild(f); f.submit();
+  } catch (e) {
+    msg.textContent = 'Error: ' + (e.message || e); btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
