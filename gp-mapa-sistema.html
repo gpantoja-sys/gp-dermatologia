@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GP Dermatología · Mapa del sistema</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --crema:#f4efe7; --crema2:#fbf8f2; --verde:#1f3d34; --verde2:#2c5446;
+    --tinta:#26201a; --suave:#8a8076; --linea:#e3dccf;
+    --auto:#2f7d5b; --semi:#b8860b; --manual:#8a8076; --ext:#4a6b8a; --fut:#9a7bb0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--crema);color:var(--tinta);font-family:'Inter',system-ui,sans-serif;
+    line-height:1.5;padding:26px 16px 60px;display:flex;justify-content:center}
+  .wrap{max-width:600px;width:100%}
+
+  h1{font-family:'Playfair Display',serif;font-weight:600;color:var(--verde);font-size:26px;margin:0 0 3px;text-align:center}
+  .sub{text-align:center;color:var(--suave);font-size:13.5px;margin-bottom:20px}
+
+  /* leyenda */
+  .leyenda{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;
+    background:var(--crema2);border:1px solid var(--linea);border-radius:12px;padding:12px 16px;margin-bottom:22px}
+  .lg{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--tinta)}
+  .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .dot.auto{background:var(--auto)} .dot.semi{background:var(--semi)}
+  .dot.manual{background:var(--manual)} .dot.ext{background:var(--ext)}
+  .dot.fut{background:#fff;border:1.5px dashed var(--fut)}
+
+  /* etapa */
+  .etapa{background:var(--crema2);border:1px solid var(--linea);border-radius:16px;
+    padding:16px 18px;position:relative;box-shadow:0 1px 0 rgba(0,0,0,.02)}
+  .ehead{display:flex;align-items:center;gap:11px;margin-bottom:4px}
+  .num{width:26px;height:26px;border-radius:50%;background:var(--verde);color:#fff;
+    font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .etit{font-family:'Playfair Display',serif;font-size:18px;font-weight:600;color:var(--verde)}
+  .erole{margin-left:auto;font-size:11px;color:var(--suave);font-style:italic}
+  .edesc{font-size:13px;color:var(--tinta);margin:6px 0 0;padding-left:37px}
+  .meta{font-size:11.5px;color:var(--suave);margin-top:7px;padding-left:37px;font-family:ui-monospace,monospace;line-height:1.7}
+  .meta b{color:var(--verde2);font-weight:600;font-family:'Inter'}
+
+  /* conector */
+  .flecha{display:flex;flex-direction:column;align-items:center;height:30px;justify-content:center}
+  .flecha .ln{width:2px;height:14px;background:var(--linea)}
+  .flecha .ch{color:var(--suave);font-size:14px;line-height:.6;margin-top:-2px}
+
+  /* carriles de pago */
+  .carriles{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-left:37px}
+  .carril{display:flex;align-items:flex-start;gap:10px;background:#fff;border:1px solid var(--linea);
+    border-radius:11px;padding:10px 13px}
+  .carril .dot{margin-top:4px}
+  .carril.fut{border-style:dashed}
+  .cinfo{flex:1}
+  .cnom{font-size:13.5px;font-weight:600;color:var(--tinta)}
+  .cnom .et{font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--suave);margin-left:6px}
+  .cdet{font-size:11.5px;color:var(--suave);margin-top:2px;line-height:1.5}
+
+  /* spine supabase */
+  .spine{margin-top:26px;background:var(--verde);color:#edf1ec;border-radius:16px;padding:18px 20px}
+  .spine .st{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;color:#fff;margin-bottom:3px}
+  .spine .ss{font-size:12px;color:#c8d4c9;margin-bottom:11px}
+  .spine .tabs{display:flex;flex-wrap:wrap;gap:6px}
+  .tab{font-size:11px;font-family:ui-monospace,monospace;background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.16);border-radius:7px;padding:4px 9px;color:#dfe7e0}
+  .spine .rt{margin-top:11px;font-size:11.5px;color:#c8d4c9}
+  .spine .rt b{color:#fff}
+
+  /* empresas */
+  .empresas{display:flex;gap:10px;margin-top:14px}
+  .emp{flex:1;background:var(--crema2);border:1px solid var(--linea);border-radius:13px;padding:13px 15px}
+  .emp .en{font-size:13px;font-weight:600;color:var(--verde)}
+  .emp .ed{font-size:11px;color:var(--suave);margin-top:3px;line-height:1.5}
+  .emp .pill{display:inline-block;font-size:10px;font-weight:600;border-radius:99px;padding:2px 8px;margin-top:7px}
+  .pill.exento{background:#eaf1ec;color:var(--verde)}
+  .pill.iva{background:#f3ecdd;color:#7a5a13}
+
+  .seccion-t{font-family:'Playfair Display',serif;font-size:14px;color:var(--suave);
+    text-transform:uppercase;letter-spacing:.1em;margin:24px 0 12px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Mapa del sistema</h1>
+  <div class="sub">GP Dermatología · el viaje del paciente, de principio a fin</div>
+
+  <div class="leyenda">
+    <div class="lg"><span class="dot auto"></span>Automático</div>
+    <div class="lg"><span class="dot semi"></span>OK de Clarita</div>
+    <div class="lg"><span class="dot manual"></span>Manual</div>
+    <div class="lg"><span class="dot ext"></span>Externo</div>
+    <div class="lg"><span class="dot fut"></span>Por construir</div>
+  </div>
+
+  <!-- 1 CAPTACIÓN -->
+  <div class="etapa">
+    <div class="ehead"><span class="num">1</span><span class="etit">Captación</span><span class="erole">Leads · CRM</span></div>
+    <div class="edesc">El paciente entra como lead. Seguimiento y reactivación de la base (~7.000) por WhatsApp.</div>
+    <div class="meta"><b>Datos:</b> pipeline_registros · reactivación · "Empujón" (Whaticket)<br><b>Mide:</b> conversión lead→atención · reactivación · origen que convierte</div>
+  </div>
+
+  <div class="flecha"><div class="ln"></div><div class="ch">▼</div></div>
+
+  <!-- 2 AGENDA -->
+  <div class="etapa">
+    <div class="ehead"><span class="num">2</span><span class="etit">Agenda &amp; Reserva</span><span class="erole">Clarita</span></div>
+    <div class="edesc">Las horas viven en <span style="color:var(--ext);font-weight:600">Medilink</span>. Quien faltó una vez queda marcado y debe pagar reserva para reagendar.</div>
+    <div class="carriles" style="padding-left:37px">
+      <div class="carril"><span class="dot ext"></span><div class="cinfo"><div class="cnom">Medilink <span class="et">externo</span></div><div class="cdet">Agenda de horas · sincroniza pacientes</div></div></div>
+      <div class="carril"><span class="dot manual"></span><div class="cinfo"><div class="cnom">gp-reservas <span class="et">no-show</span></div><div class="cdet">flag requiere_reserva · inasistencias · Caso C (perdón)</div></div></div>
+    </div>
+  </div>
+
+  <div class="flecha"><div class="ln"></div><div class="ch">▼</div></div>
+
+  <!-- 3 TÓTEM -->
+  <div class="etapa">
+    <div class="ehead"><span class="num">3</span><span class="etit">Llegada · Tótem</span><span class="erole">gp-totem</span></div>
+    <div class="edesc">El paciente recorre: RUT → datos y consentimiento → presupuesto → medio de pago → listo.</div>
+    <div class="meta"><b>Lee:</b> pacientes · presupuestos · prestaciones · packs<br><b>Escribe:</b> totem_sesiones + clarita_acciones → entra a la cola<br><b>Refleja:</b> flag "requiere reserva"</div>
+  </div>
+
+  <div class="flecha"><div class="ln"></div><div class="ch">▼</div></div>
+
+  <!-- 4 PAGO -->
+  <div class="etapa">
+    <div class="ehead"><span class="num">4</span><span class="etit">Pago</span><span class="erole">3 carriles + efectivo</span></div>
+    <div class="edesc">Según el medio, la confirmación es automática, semiautomática o manual — pero todos terminan en la caja.</div>
+    <div class="carriles">
+      <div class="carril"><span class="dot auto"></span><div class="cinfo"><div class="cnom">WebPay <span class="et">QR teléfono</span></div><div class="cdet">crear → Transbank → retorno → cierra la cola solo · split SkinTouch/LaserTouch</div></div></div>
+      <div class="carril"><span class="dot semi"></span><div class="cinfo"><div class="cnom">POS <span class="et">tarjeta física</span></div><div class="cdet">Clarita da OK sobre el voucher</div></div></div>
+      <div class="carril fut"><span class="dot fut"></span><div class="cinfo"><div class="cnom">Transferencia <span class="et">agente IA</span></div><div class="cdet">lee el mail del banco y confirma · por construir</div></div></div>
+      <div class="carril"><span class="dot manual"></span><div class="cinfo"><div class="cnom">Efectivo</div><div class="cdet">Clarita registra · se cuadra en el cierre de caja</div></div></div>
+    </div>
+  </div>
+
+  <div class="flecha"><div class="ln"></div><div class="ch">▼</div></div>
+
+  <!-- 5 COLA -->
+  <div class="etapa">
+    <div class="ehead"><span class="num">5</span><span class="etit">Cola en vivo</span><span class="erole">gp-cola · Clarita</span></div>
+    <div class="edesc">Tablero en tiempo real. El pago WebPay cierra la tarjeta solo; POS, transferencia y efectivo los confirma Clarita. Genera cobros y boletas.</div>
+    <div class="meta"><b>Realtime:</b> la tarjeta aparece y se cierra en vivo<br><b>Escribe:</b> cobros · boletas · cierra presupuesto y sesión</div>
+  </div>
+
+  <div class="flecha"><div class="ln"></div><div class="ch">▼</div></div>
+
+  <!-- 6 CAJA -->
+  <div class="etapa">
+    <div class="ehead"><span class="num">6</span><span class="etit">Caja &amp; Conciliación</span><span class="erole">gp-caja</span></div>
+    <div class="edesc">El dinero del día, por empresa y por medio. Clarita registra el efectivo; Andrea concilia y cuadra.</div>
+    <div class="carriles">
+      <div class="carril"><span class="dot manual"></span><div class="cinfo"><div class="cnom">Clarita <span class="et">registra</span></div><div class="cdet">efectivo que entró · efectivo entregado al Dr.</div></div></div>
+      <div class="carril"><span class="dot semi"></span><div class="cinfo"><div class="cnom">Andrea <span class="et">cuadra</span></div><div class="cdet">concilia cada cobro · comisión real Transbank · cierra el día</div></div></div>
+    </div>
+    <div class="meta" style="margin-top:10px"><b>Datos:</b> v_caja_dia · cierres_caja<br><b>Mide:</b> ingreso por empresa/medio · % conciliado · descuadre de efectivo</div>
+  </div>
+
+  <div class="flecha"><div class="ln"></div><div class="ch">▼</div></div>
+
+  <!-- 7 BOLETA -->
+  <div class="etapa">
+    <div class="ehead"><span class="num">7</span><span class="etit">Boleta &amp; Reembolso</span><span class="erole">Bsale · por construir</span></div>
+    <div class="edesc">Sobre cada pago, la boleta electrónica real. Si es reembolsable, se acompaña del certificado con QR verificable.</div>
+    <div class="carriles">
+      <div class="carril fut"><span class="dot fut"></span><div class="cinfo"><div class="cnom">Bsale <span class="et">emisión</span></div><div class="cdet">boleta por empresa · glosa FONASA oficial</div></div></div>
+      <div class="carril fut"><span class="dot fut"></span><div class="cinfo"><div class="cnom">Certificado de reembolso</div><div class="cdet">sobre boleta reembolsable SkinTouch · QR verificable</div></div></div>
+    </div>
+  </div>
+
+  <!-- EMPRESAS -->
+  <div class="seccion-t">Dos cajas, un sistema</div>
+  <div class="empresas">
+    <div class="emp"><div class="en">SkinTouch SpA</div><div class="ed">Honorarios médicos</div><span class="pill exento">Exento IVA</span></div>
+    <div class="emp"><div class="en">LaserTouch Ltda.</div><div class="ed">Insumos + tecnología láser</div><span class="pill iva">Afecto IVA</span></div>
+  </div>
+
+  <!-- SPINE SUPABASE -->
+  <div class="spine">
+    <div class="st">Supabase · la columna vertebral</div>
+    <div class="ss">Todo escribe y lee aquí. Realtime mantiene los paneles vivos.</div>
+    <div class="tabs">
+      <span class="tab">pacientes</span><span class="tab">presupuestos</span><span class="tab">prestaciones</span>
+      <span class="tab">clarita_acciones</span><span class="tab">totem_sesiones</span><span class="tab">cobros</span>
+      <span class="tab">boletas</span><span class="tab">transbank_transacciones</span><span class="tab">inasistencias</span>
+      <span class="tab">cierres_caja</span><span class="tab">packs</span><span class="tab">empresas</span>
+    </div>
+    <div class="rt"><b>Realtime</b> es lo que hace que el tótem, la cola y la caja reaccionen solos: un pago cambia un estado, y los paneles se actualizan sin recargar.</div>
+  </div>
+
+</div>
+</body>
+</html>
