@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administración del Catálogo · SMI</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--crimson:#CD1D52;--deep:#B22030;--ink:#1C1719;--muted:#857479;--bg:#FAF7F6;--card:#FFF;--line:#ECE0E2;--tint:#F7F0F1;--pos:#1E7A4D;--serif:'Cormorant Garamond',serif;--sans:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px}
+.wrap{max-width:1200px;margin:0 auto;padding:24px 20px 60px}
+.mast{text-align:center;padding-bottom:18px;margin-bottom:22px;border-bottom:1px solid var(--line)}
+.mast h1{font-family:var(--serif);font-weight:700;font-size:30px;margin:0}
+.mast .sub{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:4px}
+.tabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:9px 18px;font-weight:600;color:var(--muted);cursor:pointer;font-size:13px}
+.tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.bar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.bar input[type=text]{flex:1;min-width:200px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:var(--tint)}
+.btn{border:0;border-radius:10px;padding:10px 16px;font-weight:600;color:#fff;background:linear-gradient(120deg,var(--deep),var(--crimson));cursor:pointer;font-size:13px;white-space:nowrap}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+th{background:var(--ink);color:#fff;font-size:11px;letter-spacing:.05em;text-transform:uppercase;padding:10px 8px;text-align:left;font-weight:600}
+td{padding:6px 8px;border-bottom:1px solid var(--line);font-size:13px}
+tr:last-child td{border-bottom:0}
+td input,td select{width:100%;border:1px solid transparent;background:transparent;padding:6px;border-radius:6px;font-size:13px;font-family:var(--sans)}
+td input:focus,td select:focus{border-color:var(--crimson);background:var(--tint);outline:none}
+td input[type=number]{text-align:right}
+.rowbtn{border:none;background:#F3EEEF;color:var(--deep);width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:15px}
+.rowbtn:hover{background:#F3D6DE}
+.save{border:none;background:var(--pos);color:#fff;width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:14px}
+.gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.gate .box{max-width:360px;width:100%;background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px 24px;text-align:center;box-shadow:0 12px 40px -22px rgba(0,0,0,.4)}
+.gate h2{font-family:var(--serif);font-size:23px;margin:0 0 4px}
+.gate input{width:100%;padding:13px;border:1px solid var(--line);border-radius:11px;font-size:15px;text-align:center;margin-bottom:10px}
+.gate .btn{width:100%}
+.msg{font-size:13px;margin-top:8px;min-height:18px}
+.hint{font-size:12px;color:var(--muted);margin:8px 0 16px}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 22px;border-radius:10px;font-weight:600;font-size:13px;opacity:0;transition:opacity .3s;z-index:60}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="gate" id="gate">
+  <div class="box">
+    <h2>Administración del Catálogo</h2>
+    <p style="color:var(--muted);font-size:13px;margin:0 0 16px">Solo Finanzas (Dr. Pantoja o Andrea)</p>
+    <input id="clave" type="password" placeholder="Tu clave" autocomplete="off">
+    <button class="btn" id="entrar">Entrar</button>
+    <div class="msg" id="gateMsg" style="color:var(--deep)"></div>
+  </div>
+</div>
+
+<div class="wrap" id="app" style="display:none">
+  <header class="mast">
+    <h1>Administración del Catálogo</h1>
+    <div class="sub">Cirujanos · Cirugías · Convenios</div>
+  </header>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:8px"><span style="font-size:13px;color:var(--muted)">Sesión: <strong id="quien" style="color:var(--crimson)"></strong> · <span id="salir" style="cursor:pointer;text-decoration:underline">Salir</span></span></div>
+
+  <div class="tabs">
+    <div class="tab on" data-t="cirujanos">Cirujanos</div>
+    <div class="tab" data-t="cirugias">Cirugías</div>
+    <div class="tab" data-t="convenios">Convenios</div>
+  </div>
+
+  <div id="panel"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL='https://rhpguniznuhljiigwetq.supabase.co';
+const SUPA_KEY='sb_publishable_lVaI9a2wWFa0PSL3edPiRA_cVMlXDwG';
+const $=id=>document.getElementById(id);
+let CLAVE='', QUIEN='', CAT={cirujanos:[],cirugias:[],convenios:[]}, TAB='cirujanos';
+const clp=n=>Math.round(+n||0).toLocaleString('es-CL');
+
+async function rpc(fn,body){
+  const r=await fetch(SUPA_URL+'/rest/v1/rpc/'+fn,{method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify(body)});
+  if(!r.ok){ const t=await r.text(); throw new Error(t); }
+  return r.json();
+}
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+function slug(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'').slice(0,24); }
+
+$('entrar').onclick=login;
+$('clave').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+async function login(){
+  const c=$('clave').value.trim(); if(!c)return;
+  $('gateMsg').textContent='Verificando…';
+  try{
+    const fin=await rpc('smi_es_finanzas',{p_clave:c});
+    if(fin!==true) throw new Error('no');
+    CLAVE=c;
+    const u=await rpc('smi_login',{p_clave:c}); const uu=Array.isArray(u)?u[0]:u;
+    QUIEN=uu&&uu.nombre?uu.nombre:'Finanzas'; $('quien').textContent=QUIEN;
+    await cargar();
+    $('gate').style.display='none'; $('app').style.display='block';
+  }catch(e){ $('gateMsg').textContent='Clave sin permiso de Finanzas o sin conexión.'; }
+}
+$('salir').onclick=()=>location.reload();
+
+async function cargar(){ CAT=await rpc('smi_catalogo',{p_clave:CLAVE}); render(); }
+
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  TAB=t.dataset.t; document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t)); render();
+});
+
+function render(){ ({cirujanos:renderCirujanos,cirugias:renderCirugias,convenios:renderConvenios}[TAB])(); }
+
+// ---------- CIRUJANOS ----------
+function renderCirujanos(){
+  const rows=CAT.cirujanos.map(c=>`<tr data-id="${c.id}">
+    <td><input value="${(c.nombre||'').replace(/"/g,'&quot;')}" data-f="nombre"></td>
+    <td><input type="number" step="1" value="${Math.round((c.dcto_acuerdo||0)*100)}" data-f="dcto_acuerdo" style="width:70px"> %</td>
+    <td><input type="number" step="1" value="${Math.round((c.dcto_insumos||0)*100)}" data-f="dcto_insumos" style="width:70px"> %</td>
+    <td><input value="${c.especialidad||''}" data-f="especialidad"></td>
+    <td><button class="save" onclick="guardarCirujano('${c.id}',this)">✓</button></td>
+  </tr>`).join('');
+  $('panel').innerHTML=`
+    <div class="bar"><input type="text" id="q" placeholder="Filtrar cirujanos…" oninput="filtrar()">
+      <button class="btn" onclick="nuevoCirujano()">+ Nuevo cirujano</button></div>
+    <p class="hint">El descuento de acuerdo aplica a pabellón/recuperación/día cama. El de insumos es tu palanca por convenio. Cambios se guardan por fila con ✓.</p>
+    <table><thead><tr><th>Nombre</th><th>Dcto. acuerdo</th><th>Dcto. insumos</th><th>Especialidad</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+window.guardarCirujano=async(id,btn)=>{
+  const tr=btn.closest('tr'); const g=f=>tr.querySelector(`[data-f="${f}"]`).value;
+  try{
+    await rpc('smi_guardar_cirujano',{p_clave:CLAVE,p_id:id,p_nombre:g('nombre'),
+      p_dcto_acuerdo:(+g('dcto_acuerdo')||0)/100,p_dcto_insumos:(+g('dcto_insumos')||0)/100,
+      p_especialidad:g('especialidad'),p_activo:true});
+    toast('Cirujano guardado'); await cargar();
+  }catch(e){ alert('No se pudo guardar: '+e.message); }
+};
+window.nuevoCirujano=async()=>{
+  const nombre=prompt('Nombre del cirujano (con Dr./Dra.):'); if(!nombre)return;
+  const id=slug(nombre); if(!id){alert('Nombre inválido');return;}
+  try{ await rpc('smi_guardar_cirujano',{p_clave:CLAVE,p_id:id,p_nombre:nombre,p_dcto_acuerdo:0.12,p_dcto_insumos:0,p_especialidad:'Plástica',p_activo:true});
+    toast('Cirujano creado'); await cargar(); }catch(e){ alert(e.message); }
+};
+
+// ---------- CIRUGIAS ----------
+function renderCirugias(){
+  const rows=CAT.cirugias.map(c=>`<tr data-id="${c.id}">
+    <td><input value="${(c.nombre||'').replace(/"/g,'&quot;')}" data-f="nombre"></td>
+    <td><input type="number" step="1000" value="${c.arancel||0}" data-f="arancel" style="width:110px"></td>
+    <td><input type="number" step="0.5" value="${c.horas||0}" data-f="horas" style="width:60px"></td>
+    <td style="text-align:center"><input type="checkbox" ${c.hospitaliza?'checked':''} data-f="hosp"></td>
+    <td style="text-align:center"><input type="checkbox" ${c.anestesista?'checked':''} data-f="anest"></td>
+    <td style="text-align:center"><input type="checkbox" ${c.es_laser?'checked':''} data-f="laser"></td>
+    <td><button class="save" onclick="guardarCirugia('${c.id}',this)">✓</button></td>
+  </tr>`).join('');
+  $('panel').innerHTML=`
+    <div class="bar"><input type="text" id="q" placeholder="Filtrar cirugías…" oninput="filtrar()">
+      <button class="btn" onclick="nuevaCirugia()">+ Nueva cirugía</button></div>
+    <p class="hint">Arancel = lo que se cobra al paciente por insumos. Marca hospitaliza / anestesista / láser según corresponda.</p>
+    <table><thead><tr><th>Nombre</th><th>Arancel $</th><th>Horas</th><th>Hosp.</th><th>Anest.</th><th>Láser</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+window.guardarCirugia=async(id,btn)=>{
+  const tr=btn.closest('tr'); const g=f=>tr.querySelector(`[data-f="${f}"]`); 
+  try{
+    await rpc('smi_guardar_cirugia',{p_clave:CLAVE,p_id:id,p_nombre:g('nombre').value,
+      p_arancel:Math.round(+g('arancel').value||0),p_horas:+g('horas').value||3,
+      p_hosp:g('hosp').checked,p_anest:g('anest').checked,p_laser:g('laser').checked,p_activo:true});
+    toast('Cirugía guardada'); await cargar();
+  }catch(e){ alert('No se pudo guardar: '+e.message); }
+};
+window.nuevaCirugia=async()=>{
+  const nombre=prompt('Nombre de la cirugía:'); if(!nombre)return;
+  const id=slug(nombre); if(!id){alert('Nombre inválido');return;}
+  try{ await rpc('smi_guardar_cirugia',{p_clave:CLAVE,p_id:id,p_nombre:nombre,p_arancel:400000,p_horas:3,p_hosp:false,p_anest:true,p_laser:false,p_activo:true});
+    toast('Cirugía creada'); await cargar(); }catch(e){ alert(e.message); }
+};
+
+// ---------- CONVENIOS ----------
+function renderConvenios(){
+  const cirById={}; CAT.cirugias.forEach(c=>cirById[c.id]=c.nombre);
+  const medById={}; CAT.cirujanos.forEach(m=>medById[m.id]=m.nombre);
+  const opts=CAT.cirugias.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+  const medOpts=CAT.cirujanos.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('');
+  const rows=CAT.convenios.map(v=>`<tr>
+    <td>${medById[v.cirujano_id]||v.cirujano_id}</td>
+    <td>${cirById[v.cirugia_id]||v.cirugia_id}</td>
+    <td>${v.horas||'—'} h</td>
+    <td style="text-align:right">$${clp(v.costo_insumo)}</td>
+    <td><button class="rowbtn" onclick="borrarConvenio('${v.cirujano_id}','${v.cirugia_id}')" title="Quitar">×</button></td>
+  </tr>`).join('');
+  $('panel').innerHTML=`
+    <div class="bar" style="background:var(--card);padding:12px;border-radius:12px;border:1px solid var(--line)">
+      <select id="cvMed" style="flex:1;padding:9px;border:1px solid var(--line);border-radius:8px">${medOpts}</select>
+      <select id="cvCir" style="flex:2;padding:9px;border:1px solid var(--line);border-radius:8px">${opts}</select>
+      <input type="number" id="cvHoras" placeholder="Horas" step="0.5" style="width:80px;padding:9px;border:1px solid var(--line);border-radius:8px">
+      <input type="number" id="cvCosto" placeholder="Costo insumo" step="1000" style="width:130px;padding:9px;border:1px solid var(--line);border-radius:8px">
+      <button class="btn" onclick="agregarConvenio()">Vincular</button>
+    </div>
+    <p class="hint">Un convenio conecta un cirujano con una cirugía que hace. Al elegir el cirujano en el cotizador, solo aparecen sus cirugías vinculadas. El costo de insumo es interno (no lo ve el paciente).</p>
+    <table><thead><tr><th>Cirujano</th><th>Cirugía</th><th>Horas</th><th>Costo insumo</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+window.agregarConvenio=async()=>{
+  try{
+    await rpc('smi_guardar_convenio',{p_clave:CLAVE,p_cirujano:$('cvMed').value,p_cirugia:$('cvCir').value,
+      p_horas:+$('cvHoras').value||null,p_costo:Math.round(+$('cvCosto').value||0)});
+    toast('Convenio guardado'); await cargar();
+  }catch(e){ alert('No se pudo: '+e.message); }
+};
+window.borrarConvenio=async(med,cir)=>{
+  if(!confirm('¿Quitar este convenio?'))return;
+  try{ await rpc('smi_borrar_convenio',{p_clave:CLAVE,p_cirujano:med,p_cirugia:cir}); toast('Convenio quitado'); await cargar(); }catch(e){ alert(e.message); }
+};
+
+window.filtrar=()=>{
+  const q=($('q')?$('q').value:'').toLowerCase();
+  document.querySelectorAll('tbody tr').forEach(tr=>{
+    tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';
+  });
+};
+</script>
+</body>
+</html>
