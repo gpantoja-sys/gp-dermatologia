@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico de conexión · GP en vivo</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --crema:#f4efe7; --crema2:#fbf8f2; --verde:#1f3d34; --verde2:#2c5446;
+    --tinta:#26201a; --suave:#8a8076; --linea:#e3dccf;
+    --ok:#2f7d5b; --mal:#b23b3b; --esp:#b8860b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--crema);color:var(--tinta);
+    font-family:'Inter',system-ui,sans-serif;line-height:1.5;padding:24px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-family:'Playfair Display',serif;font-weight:600;color:var(--verde);
+    font-size:26px;margin:0 0 4px}
+  .sub{color:var(--suave);font-size:14px;margin:0 0 20px}
+  .card{background:var(--crema2);border:1px solid var(--linea);border-radius:14px;
+    padding:18px 20px;margin-bottom:16px}
+  .conf{font-size:13px;color:var(--suave);font-family:ui-monospace,monospace;
+    word-break:break-all}
+  .conf b{color:var(--verde2)}
+  .row{display:flex;align-items:center;gap:12px;padding:11px 0;
+    border-bottom:1px solid var(--linea)}
+  .row:last-child{border-bottom:none}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--suave);flex:none;
+    box-shadow:0 0 0 3px rgba(0,0,0,.04)}
+  .dot.ok{background:var(--ok)} .dot.mal{background:var(--mal)}
+  .dot.esp{background:var(--esp)}
+  .row .lbl{font-weight:500;flex:none;width:230px}
+  .row .val{color:var(--suave);font-size:13.5px;font-family:ui-monospace,monospace}
+  .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+  button{font-family:inherit;font-size:14px;font-weight:600;border-radius:10px;
+    padding:10px 16px;border:1px solid var(--verde);background:var(--verde);
+    color:#fff;cursor:pointer;transition:.15s}
+  button:hover{background:var(--verde2)}
+  button.ghost{background:transparent;color:var(--verde)}
+  button.ghost:hover{background:rgba(31,61,52,.06)}
+  button:disabled{opacity:.5;cursor:default}
+  .logttl{font-family:'Playfair Display',serif;color:var(--verde);font-size:18px;
+    margin:0 0 8px}
+  #log{font-family:ui-monospace,monospace;font-size:12.5px;background:#fffdf9;
+    border:1px solid var(--linea);border-radius:10px;padding:12px;height:240px;
+    overflow:auto;white-space:pre-wrap}
+  .l-ok{color:var(--ok)} .l-mal{color:var(--mal)} .l-rt{color:var(--verde2);font-weight:600}
+  .l-dim{color:var(--suave)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Diagnóstico de conexión</h1>
+  <p class="sub">GP Dermatología · puente panel ↔ Supabase en vivo</p>
+
+  <div class="card">
+    <div class="conf">URL: <b id="cURL"></b></div>
+    <div class="conf" style="margin-top:4px">anon key: <b id="cKEY"></b></div>
+  </div>
+
+  <div class="card">
+    <div class="row"><span class="dot" id="d1"></span>
+      <span class="lbl">Cliente Supabase</span><span class="val" id="v1">—</span></div>
+    <div class="row"><span class="dot" id="d2"></span>
+      <span class="lbl">Lectura de <code>empresas</code></span><span class="val" id="v2">—</span></div>
+    <div class="row"><span class="dot" id="d3"></span>
+      <span class="lbl">Conteo <code>v_clarita_pendientes</code></span><span class="val" id="v3">—</span></div>
+    <div class="row"><span class="dot" id="d4"></span>
+      <span class="lbl">Canal Realtime</span><span class="val" id="v4">—</span></div>
+  </div>
+
+  <div class="card">
+    <div class="btns">
+      <button onclick="probarLectura()">Probar lectura</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="logttl">Log en vivo</p>
+    <div id="log"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://nirxkzkfcctdigvuapuc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pcnhremtmY2N0ZGlndnVhcHVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDY5MTUsImV4cCI6MjA5NTEyMjkxNX0.iGTkHTRgdsEDoUsvS9ApQtSRAJV52z-_IASlFBmPqDM';
+
+const RUT_PRUEBA = '0-0';
+const $ = id => document.getElementById(id);
+function setDot(id, estado){ $(id).className = 'dot ' + estado; }
+function setVal(id, t){ $(id).textContent = t; }
+function log(msg, cls){
+  const d = $('log'); const t = new Date().toLocaleTimeString('es-CL');
+  const span = document.createElement('div');
+  if(cls) span.className = cls;
+  span.textContent = `[${t}] ${msg}`;
+  d.appendChild(span); d.scrollTop = d.scrollHeight;
+}
+
+// mostrar config (key enmascarada)
+$('cURL').textContent = SUPABASE_URL;
+$('cKEY').textContent = SUPABASE_ANON_KEY.slice(0,18) + '…' + SUPABASE_ANON_KEY.slice(-12);
+
+let sb;
+try{
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  setDot('d1','ok'); setVal('v1','creado'); log('Cliente Supabase creado.', 'l-ok');
+}catch(e){
+  setDot('d1','mal'); setVal('v1','error'); log('No se pudo crear el cliente: '+e.message, 'l-mal');
+}
+
+async function probarLectura(){
+  if(!sb) return;
+  // empresas
+  setDot('d2','esp'); setVal('v2','leyendo…');
+  const { data: emp, error: e1 } = await sb.from('empresas').select('id,nombre,tipo').order('id');
+  if(e1){ setDot('d2','mal'); setVal('v2','error'); log('empresas → '+e1.message, 'l-mal'); }
+  else{
+    setDot('d2','ok'); setVal('v2', emp.length + ' filas');
+    emp.forEach(r => log(`  empresa #${r.id}: ${r.nombre} (${r.tipo})`, 'l-dim'));
+    log('Lectura de empresas OK ('+emp.length+').', 'l-ok');
+  }
+  // conteo cola
+  setDot('d3','esp'); setVal('v3','contando…');
+  const { count, error: e2 } = await sb.from('v_clarita_pendientes')
+    .select('*', { count:'exact', head:true });
+  if(e2){ setDot('d3','mal'); setVal('v3','error'); log('v_clarita_pendientes → '+e2.message, 'l-mal'); }
+  else{ setDot('d3','ok'); setVal('v3', count + ' pendientes');
+        log('Cola en vivo: '+count+' pendientes.', 'l-ok'); }
+}
+
+// Realtime
+setDot('d4','esp'); setVal('v4','suscribiendo…');
+sb.channel('diagnostico-clarita')
+  .on('postgres_changes',
+      { event:'*', schema:'public', table:'clarita_acciones' },
+      payload => {
+        const r = payload.new || payload.old || {};
+        log(`◆ Realtime ${payload.eventType} · clarita_acciones id ${r.id ?? '?'} · tipo ${r.tipo ?? '?'}`, 'l-rt');
+      })
+  .subscribe(status => {
+    if(status === 'SUBSCRIBED'){ setDot('d4','ok'); setVal('v4','SUBSCRIBED');
+      log('Realtime conectado. Escuchando clarita_acciones.', 'l-ok'); }
+    else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT'){
+      setDot('d4','mal'); setVal('v4',status); log('Realtime: '+status, 'l-mal'); }
+    else{ setVal('v4',status); }
+  });
+
+// primera lectura automática
+probarLectura();
+</script>
+</body>
+</html>
