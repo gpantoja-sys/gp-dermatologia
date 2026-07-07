@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reserva y no-show · GP Dermatología</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --crema:#f4efe7; --crema2:#fbf8f2; --verde:#1f3d34; --verde2:#2c5446;
+    --tinta:#26201a; --suave:#8a8076; --linea:#e3dccf;
+    --ok:#2f7d5b; --mal:#b23b3b; --esp:#b8860b; --azul:#2c5446;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--crema);color:var(--tinta);
+    font-family:'Inter',system-ui,sans-serif;line-height:1.5;padding:20px}
+  .wrap{max-width:780px;margin:0 auto}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
+  h1{font-family:'Playfair Display',serif;font-weight:600;color:var(--verde);font-size:26px;margin:0}
+  .sub{color:var(--suave);font-size:14px;margin:0 0 18px}
+  .estado{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--suave);
+    font-family:ui-monospace,monospace}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--suave)}
+  .dot.ok{background:var(--ok)} .dot.mal{background:var(--mal)} .dot.esp{background:var(--esp)}
+
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px}
+  .bar .sp{flex:1}
+  .buscar{display:flex;gap:8px;width:100%}
+  .buscar input{flex:1;font-family:ui-monospace,monospace;font-size:15px;padding:11px 13px;
+    border:1px solid var(--linea);border-radius:10px;background:#fff;color:var(--tinta)}
+  .buscar input:focus{outline:none;border-color:var(--verde2)}
+
+  button{font-family:inherit;font-size:14px;font-weight:600;border-radius:10px;
+    padding:9px 15px;border:1px solid var(--verde);background:var(--verde);color:#fff;cursor:pointer;transition:.15s}
+  button:hover{background:var(--verde2)}
+  button.ghost{background:transparent;color:var(--verde)}
+  button.ghost:hover{background:rgba(31,61,52,.06)}
+  button.mini{font-size:12.5px;padding:7px 11px;border-radius:9px}
+  button.danger{border-color:var(--mal);color:var(--mal);background:transparent}
+  button.danger:hover{background:rgba(178,59,59,.07)}
+  button:disabled{opacity:.5;cursor:default}
+
+  .card{background:var(--crema2);border:1px solid var(--linea);border-radius:16px;
+    padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 0 rgba(0,0,0,.02)}
+  .chead{display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap}
+  .tag{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+    padding:3px 9px;border-radius:999px}
+  .tag.apo{background:#eaf1ec;color:var(--verde)}
+  .tag.pago{background:#f3ecdd;color:#7a5a13}
+  .tag.otro{background:#eee;color:#555}
+  .cname{font-family:'Playfair Display',serif;font-size:19px;color:var(--tinta);font-weight:600}
+  .crut{font-family:ui-monospace,monospace;font-size:12.5px;color:var(--suave);margin-left:auto}
+  .cmeta{font-size:13.5px;color:var(--suave);margin:2px 0 14px}
+
+  .sub-h,.hist-h{font-family:'Playfair Display',serif;font-size:15px;color:var(--verde);font-weight:600;margin:4px 0 10px}
+  .hist-h{margin-top:18px}
+
+  .campos{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+  .campo{flex:1;min-width:150px;display:flex;flex-direction:column;gap:4px}
+  .campo label{font-size:12px;color:var(--suave);font-weight:500}
+  .campo input,.campo select{font-family:inherit;font-size:14px;padding:9px 11px;
+    border:1px solid var(--linea);border-radius:9px;background:#fff;color:var(--tinta)}
+  .campo input:focus,.campo select:focus{outline:none;border-color:var(--verde2)}
+
+  .check{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;color:var(--tinta);
+    cursor:pointer;line-height:1.4;margin-top:4px}
+  .check input{margin-top:2px;width:16px;height:16px;accent-color:var(--verde)}
+
+  .desglose{border:1px solid var(--linea);border-radius:11px;overflow:hidden}
+  .drow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;font-size:14px;
+    border-bottom:1px solid var(--linea)}
+  .drow:last-child{border-bottom:none}
+  .drow .soc{font-weight:600}
+  .drow .det{color:var(--suave);font-size:12px;margin-left:6px;font-weight:400}
+
+  .acc{display:flex;gap:10px;flex-wrap:wrap}
+  .acc button{flex:1;min-width:150px}
+
+  .seccion-head{display:flex;align-items:center;gap:12px;margin:30px 0 14px}
+  .seccion-head h2{font-family:'Playfair Display',serif;font-weight:600;color:var(--verde);font-size:20px;margin:0}
+  .seccion-head .sp{flex:1}
+
+  .vacio{text-align:center;color:var(--suave);padding:48px 20px;
+    font-family:'Playfair Display',serif;font-size:19px}
+  .vacio small{display:block;font-family:'Inter';font-size:13px;margin-top:6px}
+
+  details.debug{margin-top:30px;border-top:1px solid var(--linea);padding-top:14px}
+  details.debug summary{cursor:pointer;color:var(--suave);font-size:13px}
+  .dbtns{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  #log{font-family:ui-monospace,monospace;font-size:12px;background:#fffdf9;
+    border:1px solid var(--linea);border-radius:10px;padding:11px;max-height:200px;overflow:auto;white-space:pre-wrap}
+  .l-ok{color:var(--ok)} .l-mal{color:var(--mal)} .l-dim{color:var(--suave)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Reserva y no-show</h1>
+    <div class="estado"><span class="dot" id="stDot"></span><span id="stTxt">conectando…</span></div>
+  </div>
+  <p class="sub">Recepción · Clarita</p>
+
+  <div class="bar">
+    <div class="buscar">
+      <input id="q" placeholder="RUT del paciente (ej. 14.543.741-5)" autocomplete="off">
+      <button onclick="buscar()">Buscar</button>
+    </div>
+  </div>
+
+  <div id="resultado"></div>
+
+  <div class="seccion-head">
+    <h2>Requieren reserva</h2>
+    <span class="sp"></span>
+    <span class="estado"><span id="cont-lista">—</span></span>
+    <button class="ghost mini" onclick="cargarListado()">Refrescar</button>
+  </div>
+  <div id="listado"></div>
+
+  <div id="log"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://nirxkzkfcctdigvuapuc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pcnhremtmY2N0ZGlndnVhcHVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDY5MTUsImV4cCI6MjA5NTEyMjkxNX0.iGTkHTRgdsEDoUsvS9ApQtSRAJV52z-_IASlFBmPqDM';
+
+const OPERADOR = 'Clarita';
+const RUT_PRUEBA = '0-0';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const $ = id => document.getElementById(id);
+function log(m, c){ const d=$('log'); const t=new Date().toLocaleTimeString('es-CL');
+  const s=document.createElement('div'); if(c)s.className=c; s.textContent=`[${t}] ${m}`;
+  d.appendChild(s); d.scrollTop=d.scrollHeight; }
+
+let PAC = null;     // paciente buscado + sus faltas
+let LISTA = [];     // filas de v_pacientes_requieren_reserva
+
+// RUT canónico con guión, sin puntos (ej. 14543741-5)
+function normRut(s){
+  if(!s) return '';
+  let t = (''+s).replace(/[^0-9kK]/g,'').toUpperCase();
+  if(t.length < 2) return '';
+  return t.slice(0,-1) + '-' + t.slice(-1);
+}
+function fechaCorta(iso){ return iso ? new Date(iso).toLocaleDateString('es-CL') : '—'; }
+function fechaDia(d){ return d ? new Date(d+'T00:00:00').toLocaleDateString('es-CL') : '—'; }
+function nombreDe(o){ return [o.nombre,o.apellido].filter(Boolean).join(' ').trim() || o.rut; }
+
+// ---------- buscar paciente ----------
+async function buscar(){
+  const rut = normRut($('q').value);
+  if(!rut){ $('resultado').innerHTML=''; return; }
+  $('q').value = rut;
+  const { data, error } = await sb.from('pacientes')
+    .select('rut,nombre,apellido,tel,requiere_reserva,requiere_reserva_actualizado_en')
+    .eq('rut', rut).maybeSingle();
+  if(error){ log('buscar → '+error.message,'l-mal'); return; }
+  if(!data){
+    PAC = null;
+    $('resultado').innerHTML = `<div class="card"><div class="cmeta" style="margin:0">No encontré el RUT <b>${rut}</b> en la base de pacientes.</div></div>`;
+    return;
+  }
+  const { data:faltas, error:ef } = await sb.from('inasistencias')
+    .select('*').eq('paciente_rut', rut).order('created_at',{ascending:false});
+  if(ef){ log('faltas → '+ef.message,'l-mal'); }
+  PAC = data; PAC.faltas = faltas || [];
+  renderPaciente();
+}
+
+function historial(faltas){
+  if(!faltas || !faltas.length) return '';
+  const rows = faltas.map(f=>{
+    const mot = f.motivo==='aviso_tardio' ? 'Avisó &lt;48 h' : 'No llegó';
+    const est = f.perdonada ? 'perdonada' : 'cuenta';
+    return `<div class="drow">
+      <span><span class="soc">${mot}</span><span class="det">${est} · hora ${fechaDia(f.fecha_hora)}${f.nota?(' · '+f.nota):''}</span></span>
+      <span class="det">${fechaCorta(f.created_at)}</span></div>`;
+  }).join('');
+  return `<div class="hist-h">Historial de faltas</div><div class="desglose">${rows}</div>`;
+}
+
+function renderPaciente(){
+  const cont = $('resultado');
+  if(!PAC){ cont.innerHTML=''; return; }
+  const p = PAC;
+  const activo = !!p.requiere_reserva;
+  const vigentes = (p.faltas||[]).filter(f=>!f.perdonada).length;
+  const total = (p.faltas||[]).length;
+  cont.innerHTML = `<div class="card">
+    <div class="chead">
+      <span class="tag ${activo?'pago':'otro'}">${activo?'Requiere reserva':'Sin restricción'}</span>
+      <span class="cname">${nombreDe(p)}</span>
+      <span class="crut">${p.rut}</span>
+    </div>
+    <div class="cmeta">${p.tel?('Tel '+p.tel+' · '):''}${vigentes} falta(s) vigente(s) · ${total} en total</div>
+
+    <div class="acc" style="margin-bottom:18px">
+      ${activo
+        ? `<button class="danger" onclick="setReserva('${p.rut}',false)">Quitar reserva</button>`
+        : `<button onclick="setReserva('${p.rut}',true)">Exigir reserva</button>`}
+    </div>
+
+    <div class="sub-h">Registrar inasistencia</div>
+    <div class="campos">
+      <div class="campo"><label>Motivo</label>
+        <select id="f-motivo">
+          <option value="no_llego">No llegó</option>
+          <option value="aviso_tardio">Avisó con menos de 48 h</option>
+        </select></div>
+      <div class="campo" style="max-width:180px"><label>Fecha de la hora perdida</label>
+        <input type="date" id="f-fecha"></div>
+    </div>
+    <div class="campo" style="margin-bottom:6px"><label>Nota interna (opcional)</label>
+      <input id="f-nota" placeholder="Detalle para la ficha"></div>
+    <label class="check"><input type="checkbox" id="f-perdonar">
+      Perdonar esta falta — la registro pero <b>no</b> activo la reserva (paciente fiel, Caso C)</label>
+    <div class="acc" style="margin-top:16px">
+      <button onclick="registrar('${p.rut}')">Registrar inasistencia</button>
+    </div>
+
+    ${historial(p.faltas)}
+  </div>`;
+}
+
+// ---------- encender / apagar reserva ----------
+async function setReserva(rut, valor){
+  const { error } = await sb.from('pacientes').update({
+    requiere_reserva: valor,
+    requiere_reserva_actualizado_en: new Date().toISOString()
+  }).eq('rut', rut);
+  if(error){ log('reserva → '+error.message,'l-mal'); alert('Error: '+error.message); return; }
+  log(`Reserva ${valor?'activada':'quitada'} · ${rut}`, 'l-ok');
+  if(PAC && PAC.rut===rut){ PAC.requiere_reserva=valor; PAC.requiere_reserva_actualizado_en=new Date().toISOString(); renderPaciente(); }
+  cargarListado();
+}
+
+// ---------- registrar inasistencia ----------
+async function registrar(rut){
+  const motivo   = $('f-motivo').value;
+  const fecha    = $('f-fecha').value || null;
+  const nota     = ($('f-nota').value||'').trim() || null;
+  const perdonar = $('f-perdonar').checked;
+  const { error } = await sb.from('inasistencias').insert({
+    paciente_rut: rut, fecha_hora: fecha, motivo, nota, perdonada: perdonar, marcado_por: OPERADOR
+  });
+  if(error){ log('inasistencia → '+error.message,'l-mal'); alert('Error: '+error.message); return; }
+  if(!perdonar){
+    const { error:eu } = await sb.from('pacientes').update({
+      requiere_reserva: true, requiere_reserva_actualizado_en: new Date().toISOString()
+    }).eq('rut', rut);
+    if(eu){ log('activar flag → '+eu.message,'l-mal'); }
+  }
+  log(`Inasistencia registrada · ${rut}${perdonar?' · perdonada (sin activar reserva)':' · reserva activada'}`, 'l-ok');
+  await buscar();        // recarga la ficha con la nueva falta
+  cargarListado();
+}
+
+// ---------- listado: pacientes que requieren reserva ----------
+async function cargarListado(){
+  const { data, error } = await sb.from('v_pacientes_requieren_reserva').select('*');
+  if(error){ log('listado → '+error.message,'l-mal'); $('stDot').className='dot mal'; $('stTxt').textContent='error'; return; }
+  $('stDot').className='dot ok'; $('stTxt').textContent='conectado';
+  LISTA = data || [];
+  $('cont-lista').textContent = LISTA.length + (LISTA.length===1?' paciente':' pacientes');
+  const cont = $('listado'); cont.innerHTML='';
+  if(!LISTA.length){
+    cont.innerHTML = '<div class="vacio">Nadie requiere reserva<small>Todos pueden agendar libremente</small></div>';
+    return;
+  }
+  LISTA.forEach(r=>{
+    cont.insertAdjacentHTML('beforeend', `<div class="card">
+      <div class="chead"><span class="tag pago">Requiere reserva</span>
+        <span class="cname">${nombreDe(r)}</span><span class="crut">${r.rut}</span></div>
+      <div class="cmeta">${r.faltas_vigentes||0} falta(s) vigente(s) · última ${fechaCorta(r.ultima_falta)}${r.tel?(' · Tel '+r.tel):''}</div>
+      <div class="acc">
+        <button class="ghost mini" onclick="verPaciente('${r.rut}')">Ver ficha</button>
+        <button class="danger mini" onclick="setReserva('${r.rut}',false)">Quitar reserva</button>
+      </div></div>`);
+  });
+}
+function verPaciente(rut){ $('q').value=rut; buscar(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+// ---------- arranque ----------
+$('q').addEventListener('keydown', e=>{ if(e.key==='Enter') buscar(); });
+cargarListado();
+</script>
+</body>
+</html>
