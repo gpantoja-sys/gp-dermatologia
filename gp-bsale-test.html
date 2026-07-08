@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prueba emisión Bsale</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--crema:#f4efe7;--crema2:#fbf8f2;--verde:#1f3d34;--verde2:#2c5446;
+    --tinta:#26201a;--suave:#8a8076;--linea:#e3dccf;--rojo:#b23b3b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--crema);color:var(--tinta);font-family:'Inter',sans-serif;
+    line-height:1.5;padding:24px;display:flex;justify-content:center}
+  .wrap{max-width:480px;width:100%}
+  h1{font-family:'Playfair Display',serif;font-weight:600;color:var(--verde);font-size:22px;margin:0 0 4px}
+  .sub{color:var(--suave);font-size:13.5px;margin:0 0 20px}
+  .aviso{background:#fbe9e9;border:1px solid #e3b9b9;color:var(--rojo);border-radius:10px;
+    padding:12px 14px;font-size:13px;margin-bottom:16px;font-weight:600}
+  .card{background:var(--crema2);border:1px solid var(--linea);border-radius:16px;padding:20px;margin-bottom:16px}
+  .card h2{font-size:15px;margin:0 0 4px;color:var(--verde)}
+  .card p{font-size:12.5px;color:var(--suave);margin:0 0 12px}
+  button{width:100%;font-family:inherit;font-size:14.5px;font-weight:600;border-radius:12px;
+    padding:13px;border:1px solid var(--verde);background:var(--verde);color:#fff;cursor:pointer}
+  button:active{background:var(--verde2)}
+  button:disabled{opacity:.5}
+  .out{font-family:ui-monospace,monospace;font-size:12px;margin-top:12px;color:var(--suave);
+    white-space:pre-wrap;word-break:break-word;background:#fff;border:1px solid var(--linea);
+    border-radius:10px;padding:10px}
+  a{color:var(--verde)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Prueba de emisión Bsale</h1>
+  <p class="sub">Emite una boleta electrónica REAL por un monto simbólico, para confirmar la integración</p>
+
+  <div class="aviso">⚠️ Esto emite documentos tributarios reales ante el SII. No hay sandbox. Usa montos bajos.</div>
+
+  <div class="card">
+    <h2>SkinTouch · Boleta Exenta ($1.000)</h2>
+    <p>codeSii 41 · sin IVA</p>
+    <button onclick="probar('skintouch')" id="btn-sk">Emitir boleta de prueba</button>
+    <div class="out" id="out-sk"></div>
+  </div>
+
+  <div class="card">
+    <h2>LaserTouch · Boleta Afecta ($1.000)</h2>
+    <p>codeSii 39 · IVA 19% incluido</p>
+    <button onclick="probar('lasertouch')" id="btn-lt">Emitir boleta de prueba</button>
+    <div class="out" id="out-lt"></div>
+  </div>
+</div>
+
+<script>
+async function probar(empresa){
+  const btn = document.getElementById(empresa==='skintouch'?'btn-sk':'btn-lt');
+  const out = document.getElementById(empresa==='skintouch'?'out-sk':'out-lt');
+  if(!confirm('Esto va a emitir una boleta REAL de $1.000 para '+empresa+' ante el SII. ¿Continuar?')) return;
+  btn.disabled = true; out.textContent = 'Emitiendo…';
+  try{
+    const r = await fetch('/api/bsale-emitir', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        empresa: empresa,
+        items: [{ monto: 1000, comment: 'Prueba de integración Bsale', reembolsable: false }]
+      })
+    });
+    const data = await r.json();
+    out.textContent = JSON.stringify(data, null, 2);
+    if(data.ok && data.resultados && data.resultados[0] && data.resultados[0].boleta){
+      const b = data.resultados[0].boleta;
+      if(b.bsale_url){ out.innerHTML += '<br><br><a href="'+b.bsale_url+'" target="_blank">Ver timbre/PDF</a>'; }
+    }
+  }catch(e){
+    out.textContent = 'Error: '+(e.message||e);
+  }
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
