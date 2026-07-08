@@ -111,7 +111,7 @@ async function guardarBoleta(params){
     bsale_estado: bsaleResult.ok ? 'emitida' : 'error',
     bsale_document_id: bsaleResult.ok ? bsaleResult.data.id : null,
     bsale_folio: bsaleResult.ok ? String(bsaleResult.data.number || bsaleResult.data.id) : null,
-    bsale_url: bsaleResult.ok ? (bsaleResult.data.urlTimbre || null) : null,
+    bsale_url: bsaleResult.ok ? (bsaleResult.data.urlPdf || bsaleResult.data.urlTimbre || null) : null,
     bsale_error: bsaleResult.ok ? null : bsaleResult.error
   };
   const r = await sbFetch('boletas', {
