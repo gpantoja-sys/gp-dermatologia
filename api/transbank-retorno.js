@@ -220,6 +220,25 @@ async function cerrarLoop(pay){
   } catch (e) { /* el cierre no debe romper la pantalla del paciente */ }
 }
 
+// Emite la boleta real en Bsale para el leg recién pagado. No bloquea ni
+// rompe la pantalla del paciente si Bsale falla — el estado queda guardado
+// en `boletas.bsale_estado` para revisar después.
+async function emitirBoletaAuto(host, pay, empresaId, cobroId){
+  if (!pay.presupuesto_id || !cobroId) return; // sin presupuesto no hay glosa que resolver
+  try {
+    await fetch('https://' + host + '/api/bsale-emitir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        empresa: pay.empresa,
+        presupuesto_id: pay.presupuesto_id,
+        cobro_id: cobroId,
+        paciente_rut: pay.paciente_rut || null
+      })
+    });
+  } catch (e) { /* queda 'pendiente'/'error' en boletas; no interrumpe el pago */ }
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   try {
@@ -319,6 +338,9 @@ module.exports = async (req, res) => {
     let cobroId = null;
     if (valido && empresaId) {
       cobroId = await crearCobroWebpay(empresaId, pay, tx);
+      // Emisión automática de la boleta real en Bsale (no bloquea la pantalla)
+      const hostBsale = req.headers['x-forwarded-host'] || req.headers.host;
+      await emitirBoletaAuto(hostBsale, pay, empresaId, cobroId);
     }
 
     if (tx.buy_order) {
