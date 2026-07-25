@@ -132,12 +132,39 @@ function agruparPorReembolsable(items){
   });
 }
 
+// Envía la boleta (y certificado si aplica) por WhatsApp vía Whaticket.
+// No bloquea ni rompe la emisión si falla — es un "mejor esfuerzo".
+async function enviarWhatsApp(host, paciente_rut, boleta, certificadoCodigo){
+  if (!host || !paciente_rut || !boleta || !boleta.bsale_url) return;
+  try {
+    const q = await sbFetch('pacientes?rut=eq.' + encodeURIComponent(paciente_rut) + '&select=nombre,tel&limit=1');
+    const arr = await q.json();
+    const pac = (arr && arr[0]) ? arr[0] : null;
+    if (!pac || !pac.tel) return;
+
+    let msg = 'Hola ' + (pac.nombre || '') + ' 👋\n'
+            + 'Tu atención con el Dr. Gonzalo Pantoja quedó pagada.\n\n'
+            + '📄 Tu boleta: ' + boleta.bsale_url;
+    if (certificadoCodigo) {
+      msg += '\n\n🧾 Certificado de reembolso · Código: ' + certificadoCodigo
+           + '\nGuárdalo para presentarlo a tu Isapre.';
+    }
+    msg += '\n\nGracias por confiar en nosotros.';
+
+    await fetch('https://' + host + '/api/whatsapp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number: pac.tel, body: msg, name: pac.nombre || '' })
+    });
+  } catch (e) { /* no interrumpe la emisión */ }
+}
 module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    const _host = req.headers['x-forwarded-host'] || req.headers.host;
     const empresa = String(body.empresa || '').toLowerCase();
     if (!CODE_SII[empresa]) { res.status(400).json({ error: 'empresa debe ser skintouch o lasertouch' }); return; }
     const _presupuesto_id = req.body && req.body.presupuesto_id ? req.body.presupuesto_id : null;
@@ -242,7 +269,8 @@ module.exports = async (req, res) => {
           paciente_rut, presupuesto_id: _presupuesto_id
         });
       }
-
+      if (bsaleResult.ok) await enviarWhatsApp(_host, paciente_rut, boletaGuardada, certificado && certificado.ok ? certificado.codigo : null);
+      
       resultados.push({
         ok: bsaleResult.ok, error: bsaleResult.ok ? null : bsaleResult.error,
         boleta: boletaGuardada,
