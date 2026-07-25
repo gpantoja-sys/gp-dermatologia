@@ -64,8 +64,59 @@ function calcularNetoIva(empresa, montoTotal){
   return { neto: montoTotal, iva: 0 }; // skintouch: exento
 }
 
+// ── Receptor (cliente) para la boleta ─────────────────────────────────────────
+// Bsale acepta cliente en la boleta (es opcional) y con eso llena SEÑOR/RUT, que
+// hoy salen en blanco. Para persona natural companyOrPerson=0 y el nombre completo
+// va en `company`. La ficha `pacientes` tiene nombre/apellido/apellido2, comuna y
+// email; NO tiene dirección de calle, así que ese campo se omite hasta capturarlo.
+function construirCliente(pac){
+  if (!pac) return null;
+  const rut = (pac.rut || '').trim();
+  const nombre = [pac.nombre, pac.apellido, pac.apellido2].filter(Boolean).join(' ').trim();
+  if (!rut || !nombre) return null; // sin RUT + nombre no vale la pena nominar la boleta
+  const cli = { code: rut, company: nombre, companyOrPerson: 0 };
+  if (pac.comuna) cli.municipality = pac.comuna;
+  if (pac.email)  cli.email = pac.email;
+  return cli;
+}
+
+// ── Forma de pago ─────────────────────────────────────────────────────────────
+// El "Transferencia Bancaria" por defecto aparece porque no mandamos el bloque
+// `payments`; Bsale usa la forma de pago default de la cuenta. Para mostrar la
+// correcta se manda `payments` con el paymentTypeId REAL de la cuenta. Como los
+// IDs son propios de cada cuenta Bsale, se detecta por nombre. Si no se encuentra,
+// devuelve null y NO se manda payments (se mantiene el comportamiento actual, sin
+// romper la emisión). Para forzar un ID fijo, setea PAYMENT_TYPE_ID[empresa].
+const PAYMENT_TYPE_ID = { skintouch: null, lasertouch: null }; // override manual opcional
+const MEDIO_KEYWORDS = {
+  tarjeta:       ['webpay','transbank','tarjeta de crédito','tarjeta de credito','crédito','credito','tarjeta'],
+  webpay:        ['webpay','transbank','tarjeta de crédito','tarjeta de credito','crédito','credito','tarjeta'],
+  debito:        ['tarjeta de débito','tarjeta de debito','débito','debito','redcompra'],
+  efectivo:      ['efectivo','contado','cash'],
+  transferencia: ['transferencia','transfer']
+};
+async function resolverPaymentTypeId(empresa, medio){
+  try {
+    if (PAYMENT_TYPE_ID[empresa]) return PAYMENT_TYPE_ID[empresa]; // override manual
+    if (!medio) return null;
+    const claves = MEDIO_KEYWORDS[String(medio).toLowerCase()] || MEDIO_KEYWORDS.tarjeta;
+    const token = bsaleToken(empresa);
+    if (!token) return null;
+    const r = await fetch(BSALE_BASE + '/payment_types.json?limit=50', { headers: { access_token: token } });
+    const data = await r.json().catch(function(){ return null; });
+    const tipos = Array.isArray(data) ? data : ((data && Array.isArray(data.items)) ? data.items : []);
+    // state 0 = activo en Bsale (si no viene el campo, se considera activo).
+    const activos = tipos.filter(function(t){ return t && (t.state === 0 || t.state === '0' || typeof t.state === 'undefined'); });
+    for (const clave of claves) {
+      const hit = activos.find(function(t){ return String(t.name || '').toLowerCase().indexOf(clave) !== -1; });
+      if (hit) return hit.id;
+    }
+    return null;
+  } catch (e) { return null; }
+}
+
 // Arma el body de Bsale para un grupo de líneas (todas mismo estado reembolsable)
-function bodyBsale(empresa, lineas){
+function bodyBsale(empresa, lineas, opts){
   const codeSii = CODE_SII[empresa];
   const officeId = bsaleOffice(empresa);
   const emissionDate = Math.floor(Date.now() / 1000);
@@ -76,13 +127,16 @@ function bodyBsale(empresa, lineas){
   });
   const body = { codeSii, emissionDate, details };
   if (officeId) body.officeId = Number(officeId);
+  opts = opts || {};
+  if (opts.client) body.client = opts.client;
+  if (opts.payments && opts.payments.length) body.payments = opts.payments;
   return body;
 }
 
-async function emitirEnBsale(empresa, lineas){
+async function emitirEnBsale(empresa, lineas, opts){
   const token = bsaleToken(empresa);
   if (!token) return { ok:false, error: 'Falta BSALE_' + empresa.toUpperCase() + '_TOKEN en Vercel' };
-  const body = bodyBsale(empresa, lineas);
+  const body = bodyBsale(empresa, lineas, opts);
   try {
     const r = await fetch(BSALE_BASE + '/documents.json', {
       method: 'POST',
@@ -176,6 +230,7 @@ module.exports = async (req, res) => {
 
     const cobro_id = body.cobro_id || null;
     const paciente_rut = body.paciente_rut || null;
+    const medio_pago = body.medio_pago || null; // 'tarjeta'|'webpay'|'efectivo'|'transferencia'|...
 
     // ── Idempotencia: si ya hay una boleta emitida para este cobro, no repetir ──
     if (cobro_id) {
@@ -186,6 +241,18 @@ module.exports = async (req, res) => {
         return;
       }
     }
+
+    // ── Receptor (cliente) para la boleta + forma de pago ──
+    // Se resuelven una sola vez, no por cada grupo. Si algo falla, quedan en
+    // null/null y la boleta sale igual que antes (sin receptor / forma default).
+    let clienteBoleta = null;
+    if (paciente_rut) {
+      const pq = await sbFetch('pacientes?rut=eq.' + encodeURIComponent(paciente_rut) +
+        '&select=rut,nombre,apellido,apellido2,comuna,email&limit=1');
+      const parr = await pq.json().catch(function(){ return []; });
+      clienteBoleta = construirCliente(parr && parr[0]);
+    }
+    const paymentTypeId = await resolverPaymentTypeId(empresa, medio_pago);
 
     // ── Resolver las líneas a facturar ──
     let lineasBase = []; // [{ monto, comment, reembolsable, prestacion_id }]
@@ -252,7 +319,10 @@ module.exports = async (req, res) => {
         return { netoUnit, comment: l.comment };
       });
 
-      const bsaleResult = await emitirEnBsale(empresa, lineasBsale);
+      const payments = paymentTypeId
+        ? [{ paymentTypeId: paymentTypeId, amount: totalGrupo, recordDate: Math.floor(Date.now() / 1000) }]
+        : null;
+      const bsaleResult = await emitirEnBsale(empresa, lineasBsale, { client: clienteBoleta, payments: payments });
       const prestacion_id_repr = grupo.items.length === 1 ? grupo.items[0].prestacion_id : null;
       const concepto_repr = grupo.items.map(function(l){ return l.comment; }).join(' + ').slice(0, 250);
 
