@@ -60,11 +60,19 @@ async function emitirCertificado(params){
     // certificado), con la glosa amigable si existe, si no la FONASA.
     let lineas = [];
     if (presupuesto_id){
+      // NOTA: glosa_certificado y parametros_tecnicos AÚN NO existen como columnas
+      // en `prestaciones` (pendiente: cargar las 40 glosas amigables). Pedirlas en
+      // el select hace que PostgREST devuelva 400 y el certificado se caiga en
+      // silencio. Se omiten hasta que las columnas existan; el mapeo de abajo ya
+      // hace fallback a nombre/glosa_fonasa, así que al agregarlas basta con volver
+      // a sumarlas aquí. Mientras tanto el certificado usa glosa_fonasa.
       const q = await sb('presupuesto_items?presupuesto_id=eq.' + presupuesto_id
         + '&reembolsable=eq.true&excluido=eq.false'
-        + '&select=honorario_monto,prestaciones(nombre,codigo_dx,glosa_fonasa,glosa_certificado,parametros_tecnicos)');
+        + '&select=honorario_monto,prestaciones(nombre,codigo_dx,glosa_fonasa)');
       const its = await q.json().catch(function(){ return []; });
-      lineas = (its || []).map(function(i){
+      // Blindaje: si vuelve un objeto de error (400) en vez de un arreglo, no reventar.
+      const itsArr = Array.isArray(its) ? its : [];
+      lineas = itsArr.map(function(i){
         const p = i.prestaciones || {};
         return {
           nombre: p.nombre || 'Prestación',
