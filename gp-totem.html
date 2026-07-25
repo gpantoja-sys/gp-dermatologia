@@ -1399,7 +1399,7 @@ async function pagarWebpay() {
       body: JSON.stringify({
         empresa: legs[0].empresa, monto: legs[0].monto, concepto: legs[0].concepto,
         paciente_rut: p.rut, grupo: 'G-' + Date.now(), pendientes: legs.slice(1),
-        accion_id: accionId, presupuesto_id: p.presupuesto_id
+        accion_id: accionId, presupuesto_id: p.presupuesto_id, sesion_id: sesionId
       })
     });
     const data = await r.json();
