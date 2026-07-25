@@ -233,7 +233,8 @@ async function emitirBoletaAuto(host, pay, empresaId, cobroId){
         empresa: pay.empresa,
         presupuesto_id: pay.presupuesto_id,
         cobro_id: cobroId,
-        paciente_rut: pay.paciente_rut || null
+        paciente_rut: pay.paciente_rut || null,
+        medio_pago: 'tarjeta'
       })
     });
   } catch (e) { /* queda 'pendiente'/'error' en boletas; no interrumpe el pago */ }
