@@ -184,6 +184,7 @@ async function crearCobroWebpay(empresaId, pay, tx){
       method: 'POST', headers: { Prefer: 'return=representation' },
       body: JSON.stringify({
         paciente_rut: pay.paciente_rut || null,
+        presupuesto_id: pay.presupuesto_id || null,
         empresa_id: empresaId,
         monto: tx.amount,
         medio_pago: 'WebPay',
