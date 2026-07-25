@@ -1,7 +1,7 @@
-// api/_cert-test.js — ENDPOINT TEMPORAL DE DIAGNÓSTICO. Borrar después de usar.
+// api/cert-test.js — ENDPOINT TEMPORAL DE DIAGNÓSTICO. Borrar después de usar.
 // Re-ejecuta emitirCertificado sobre una boleta YA emitida (por folio), sin
 // generar un pago ni una boleta nueva. Abrir en el navegador:
-//   https://drgonzalopantoja.cl/api/_cert-test?folio=14604
+//   https://drgonzalopantoja.cl/api/cert-test?folio=14604
 // Devuelve el resultado exacto de emitirCertificado (incluido status/respuesta
 // de Supabase si el insert falla), para ver por qué el certificado no se crea.
 
