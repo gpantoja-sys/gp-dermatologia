@@ -1387,7 +1387,7 @@ async function pagarWebpay() {
   showLoading('Generando tu código de pago…');
   const res = await registrarSesion('esperando_pago');
   const accionId = (res && res.accionId) ? res.accionId : null;
-
+  const sesionId = (res && res.sesionId) ? res.sesionId : null;
   const concepto = (p.glosaConcat || 'Atención').slice(0, 120);
   const legs = [];
   if (sk > 0) legs.push({ empresa: 'skintouch',  monto: sk, concepto: concepto });
