@@ -434,7 +434,7 @@ html, body {
 </style>
 </head>
 <body>
-<div id="ver-tag" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-size:10px;color:rgba(120,110,95,.45);font-family:-apple-system,Arial,sans-serif;pointer-events:none;letter-spacing:.03em">v2026-07-24-sesionfix</div>
+<div id="ver-tag" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-size:10px;color:rgba(120,110,95,.45);font-family:-apple-system,Arial,sans-serif;pointer-events:none;letter-spacing:.03em">v2026-07-24-sesionfix2</div>
 
 <!-- LOADING OVERLAY -->
 <div class="loading-overlay" id="loading">
@@ -1442,7 +1442,7 @@ function esperarPagoWebpay(presupuestoId) {
   webpayTimer = setInterval(async function () {
     try {
       const { data } = await sb.from('presupuestos').select('estado').eq('id', presupuestoId).maybeSingle();
-      if (data && data.estado === 'pagado') { clearInterval(webpayTimer); webpayTimer = null; goScreen(5); }
+     if (data && data.estado === 'pagado') { clearInterval(webpayTimer); webpayTimer = null; if (currentPaciente) syncConfirmacion(currentPaciente, { sk: currentPaciente.presupuesto.skintouch, lt: currentPaciente.presupuesto.lasertouch || null, total: (currentPaciente.presupuesto.skintouch ? currentPaciente.presupuesto.skintouch.monto : 0) + (currentPaciente.presupuesto.lasertouch ? currentPaciente.presupuesto.lasertouch.monto : 0) }); goScreen(5); }
     } catch (e) {}
   }, 3000);
 }
