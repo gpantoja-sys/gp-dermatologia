@@ -66,15 +66,26 @@ function calcularNetoIva(empresa, montoTotal){
 
 // ── Receptor (cliente) para la boleta ─────────────────────────────────────────
 // Bsale acepta cliente en la boleta (es opcional) y con eso llena SEÑOR/RUT, que
-// hoy salen en blanco. Para persona natural companyOrPerson=0 y el nombre completo
-// va en `company`. La ficha `pacientes` tiene nombre/apellido/apellido2, comuna y
-// email; NO tiene dirección de calle, así que ese campo se omite hasta capturarlo.
+// hoy salen en blanco. IMPORTANTE: para persona natural (companyOrPerson=0) Bsale
+// lee el nombre de `firstName`/`lastName`, NO de `company`. Mandar el nombre en
+// `company` con companyOrPerson=0 hace que Bsale rechace con "The client has no
+// name". La ficha `pacientes` tiene nombre/apellido/apellido2, comuna y email; NO
+// tiene dirección de calle, así que ese campo se omite hasta capturarlo.
+// A prueba de fallos: si no hay RUT + nombre + apellido, devuelve null y la boleta
+// se emite SIN receptor (como antes) en vez de caerse.
 function construirCliente(pac){
   if (!pac) return null;
   const rut = (pac.rut || '').trim();
-  const nombre = [pac.nombre, pac.apellido, pac.apellido2].filter(Boolean).join(' ').trim();
-  if (!rut || !nombre) return null; // sin RUT + nombre no vale la pena nominar la boleta
-  const cli = { code: rut, company: nombre, companyOrPerson: 0 };
+  const firstName = (pac.nombre || '').trim();
+  const lastName  = [pac.apellido, pac.apellido2].filter(Boolean).join(' ').trim();
+  if (!rut || !firstName || !lastName) return null; // sin estos, no nominar (boleta sin receptor)
+  const cli = {
+    code: rut,
+    companyOrPerson: 0,                       // persona natural
+    firstName: firstName,                     // nombre
+    lastName: lastName,                        // apellido(s)
+    company: (firstName + ' ' + lastName)      // redundante pero inofensivo; algunos PDFs lo muestran
+  };
   if (pac.comuna) cli.municipality = pac.comuna;
   if (pac.email)  cli.email = pac.email;
   return cli;
