@@ -32,6 +32,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const BSALE_BASE = 'https://api.bsale.cl/v1';
 const { emitirCertificado } = require('./_certificado');
 const CODE_SII = { skintouch: 41, lasertouch: 39 }; // 41 = Boleta Exenta Electrónica · 39 = Boleta Electrónica (afecta)
+const EMPRESA_ID = { skintouch: 1, lasertouch: 2 }; // mapeo canónico string → empresa_id (para la fila en `boletas`)
 
 function bsaleToken(empresa){
   const E = String(empresa || '').toUpperCase();
@@ -103,6 +104,7 @@ async function guardarBoleta(params){
   const { empresa, cobro_id, paciente_rut, reembolsable, total, prestacion_id, concepto, bsaleResult } = params;
   const { neto, iva } = calcularNetoIva(empresa, total);
   const row = {
+    empresa_id: EMPRESA_ID[empresa] || null,
     cobro_id: cobro_id || null,
     paciente_rut: paciente_rut || null,
     neto, iva, total,
@@ -167,7 +169,10 @@ module.exports = async (req, res) => {
     const _host = req.headers['x-forwarded-host'] || req.headers.host;
     const empresa = String(body.empresa || '').toLowerCase();
     if (!CODE_SII[empresa]) { res.status(400).json({ error: 'empresa debe ser skintouch o lasertouch' }); return; }
-    const _presupuesto_id = req.body && req.body.presupuesto_id ? req.body.presupuesto_id : null;
+    // FIX: leer del `body` ya parseado (línea 166), NO de `req.body` crudo.
+    // En el camino WebPay req.body llega como string, y `req.body.presupuesto_id`
+    // daba undefined → el certificado se llamaba con presupuesto_id null y no emitía.
+    const _presupuesto_id = body.presupuesto_id || null;
 
     const cobro_id = body.cobro_id || null;
     const paciente_rut = body.paciente_rut || null;
