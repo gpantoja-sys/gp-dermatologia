@@ -3,6 +3,12 @@
 // sin anuladas, ordenadas por hora, cruzando el RUT con la base de GP.
 // Lo usa el panel "Preparar día" para que Clarita arme el tótem.
 //
+// v2 — FIX citas incompletas: la API de Medilink pagina con cursores
+// (links.next). Antes se leía SOLO la primera página de las citas de toda la
+// clínica y de ahí se filtraban las del Dr. → llegaban 8 de 15. Ahora:
+//   a) el filtro id_profesional va en la consulta misma (solo SUS citas), y
+//   b) se recorren TODAS las páginas siguiendo links.next.
+//
 // Uso:  /api/medilink-citas?fecha=2026-07-27
 
 const MEDILINK_BASE  = 'https://api.medilink.healthatom.com/api/v1';
@@ -13,14 +19,26 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const ID_PROFESIONAL_GONZALO = 1;
 
-async function medilink(endpoint, params){
-  const url = new URL(MEDILINK_BASE + '/' + endpoint);
+// Trae TODAS las páginas de un endpoint de Medilink (paginación por cursor:
+// la respuesta trae links.next mientras queden páginas). Tope de seguridad
+// de 30 páginas para nunca quedar en un loop infinito.
+async function medilinkTodas(endpoint, params){
+  let url = new URL(MEDILINK_BASE + '/' + endpoint);
   if (params && Object.keys(params).length){
     url.searchParams.set('q', JSON.stringify(params));
   }
-  const res = await fetch(url.toString(), { headers: { Authorization: 'Token ' + MEDILINK_TOKEN } });
-  const json = await res.json().catch(function(){ return {}; });
-  return (json && json.data) ? json.data : [];
+  const out = [];
+  let guard = 0;
+  while (url && guard < 30){
+    guard++;
+    const res = await fetch(url.toString(), { headers: { Authorization: 'Token ' + MEDILINK_TOKEN } });
+    const json = await res.json().catch(function(){ return {}; });
+    const data = (json && Array.isArray(json.data)) ? json.data : [];
+    for (const d of data) out.push(d);
+    const next = json && json.links && json.links.next;
+    url = next ? new URL(next) : null;
+  }
+  return out;
 }
 
 async function sbPacientesPorMedilink(ids){
@@ -49,13 +67,19 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // 1) Traer citas del día (con respaldo de filtro por rango)
-    let citas = await medilink('citas', { fecha: { eq: fecha } });
+    // 1) Traer las citas del día SOLO del Dr. Pantoja, todas las páginas.
+    //    Respaldo: si el filtro combinado no devuelve nada, se pide el día
+    //    completo (también paginado) y se filtra acá.
+    let citas = await medilinkTodas('citas', {
+      fecha: { eq: fecha },
+      id_profesional: { eq: ID_PROFESIONAL_GONZALO }
+    });
     if (!citas.length){
-      citas = await medilink('citas', { fecha: { gte: fecha, lte: fecha } });
+      citas = await medilinkTodas('citas', { fecha: { gte: fecha, lte: fecha } });
     }
 
-    // 2) Solo las del Dr. Pantoja y no anuladas
+    // 2) Solo las del Dr. Pantoja y no anuladas (doble seguro: aunque el
+    //    filtro ya venga aplicado desde Medilink, esto no deja pasar nada).
     const mias = citas.filter(function(c){
       return Number(c.id_profesional) === ID_PROFESIONAL_GONZALO && Number(c.estado_anulacion) === 0;
     });
