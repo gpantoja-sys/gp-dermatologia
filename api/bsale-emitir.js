@@ -84,6 +84,15 @@ function construirCliente(pac){
   if (lastName && nomRaw.toLowerCase().endsWith(lastName.toLowerCase())){
     firstName = nomRaw.slice(0, nomRaw.length - lastName.length).trim();
   }
+  // Respaldo para la carga masiva: si NO hay apellido separado pero `nombre`
+  // trae el nombre completo, se derivan los apellidos de las últimas palabras
+  // (2 si hay 3+ palabras, 1 si hay 2). Mejor una boleta nominada con esta
+  // heurística que una boleta sin receptor que no le sirve a la paciente.
+  if (!lastName && firstName){
+    const t = firstName.split(/\s+/).filter(Boolean);
+    if (t.length >= 3){ lastName = t.slice(-2).join(' '); firstName = t.slice(0, -2).join(' '); }
+    else if (t.length === 2){ lastName = t[1]; firstName = t[0]; }
+  }
   if (!rut || !firstName || !lastName) return null; // sin estos, no nominar (boleta sin receptor)
   const cli = {
     code: rut,
@@ -142,7 +151,10 @@ function bodyBsale(empresa, lineas, opts){
     if (empresa === 'lasertouch') d.taxes = [{ code: 14, percentage: 19 }];
     return d;
   });
-  const body = { codeSii, emissionDate, details };
+  // declareSii: 1 → el documento se declara al SII y el PDF sale con su timbre
+  // electrónico (TED). Sin este campo, Bsale generaba el documento SIN timbre
+  // y la boleta no servía como documento tributario completo.
+  const body = { codeSii, emissionDate, declareSii: 1, details };
   if (officeId) body.officeId = Number(officeId);
   opts = opts || {};
   if (opts.client) body.client = opts.client;
