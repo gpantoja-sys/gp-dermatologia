@@ -6,9 +6,16 @@
 // Uso:  /api/medilink-paciente-sync?id=26211
 // Devuelve { ok, rut, nombre } para que el panel abra el generador con esa paciente.
 //
-// Mapeo idéntico al de import-pacientes.js (así las nuevas quedan igual que las ya
-// cargadas), con UNA diferencia: si el email es el genérico de la clínica, se guarda
-// vacío para que el tótem obligue a la paciente a poner su correo real.
+// v2 — DOS ARREGLOS:
+//  1) APELLIDOS SEPARADOS: antes se guardaba todo pegado en `nombre` y
+//     `apellido` quedaba vacío → la boleta Bsale salía SIN receptor (la
+//     nominación exige nombre y apellido por separado). Ahora `nombre` guarda
+//     el nombre de pila, `apellido` el primer apellido y `apellido2` el resto.
+//  2) RUT CANÓNICO: sin puntos, con guión y dígito verificador en MAYÚSCULA
+//     (antes entraba tal cual venía de Medilink y reaparecían las k minúsculas).
+//
+// Si el email es el genérico de la clínica, se guarda vacío para que el tótem
+// obligue a la paciente a poner su correo real.
 
 const MEDILINK_BASE = 'https://api.medilink.healthatom.com/api/v1';
 const TOKEN         = process.env.MEDILINK_TOKEN;
@@ -24,6 +31,21 @@ function mapSexo(s){
   if(u.startsWith('F')) return 'Femenino';
   if(u.startsWith('M')) return 'Masculino';
   return 'Otro';
+}
+
+// RUT canónico: sin puntos, con guión, DV en MAYÚSCULA (ej. 18020704-K).
+function normRut(r){
+  r = String(r || '').replace(/[.\s]/g, '').toUpperCase();
+  if (!r) return null;
+  if (r.indexOf('-') < 0 && r.length > 1) r = r.slice(0, -1) + '-' + r.slice(-1);
+  return r;
+}
+
+// "Pérez Soto" → { a1:'Pérez', a2:'Soto' } · "Pérez" → { a1:'Pérez', a2:null }
+function splitApellidos(s){
+  const t = String(s || '').trim().split(/\s+/).filter(Boolean);
+  if (!t.length) return { a1: null, a2: null };
+  return { a1: t[0], a2: t.slice(1).join(' ') || null };
 }
 
 module.exports = async (req, res) => {
@@ -42,17 +64,22 @@ module.exports = async (req, res) => {
     const j = await r.json().catch(function(){ return {}; });
     const p = (j && j.data) ? j.data : j;
 
-    if(!p || !p.rut){
+    const rut = normRut(p && p.rut);
+    if(!p || !rut){
       return res.status(422).json({ error: 'La ficha de Medilink no tiene RUT; no se puede crear.', id_medilink: id });
     }
 
     // 2) Email: si viene vacío o es el genérico de la clínica, lo dejamos null
     const emailReal = (p.email && p.email.trim().toLowerCase() !== EMAIL_CLINICA) ? p.email.trim() : null;
 
-    // 3) Armar la fila (mismo mapeo que la carga masiva)
+    // 3) Armar la fila: nombre de pila y apellidos POR SEPARADO (así la boleta
+    //    Bsale sale nominada y los paneles muestran el nombre sin duplicar).
+    const ap = splitApellidos(p.apellidos);
     const fila = {
-      rut: p.rut,
-      nombre: [p.nombre, p.apellidos].filter(Boolean).join(' ') || null,
+      rut: rut,
+      nombre: (p.nombre || '').trim() || null,
+      apellido: ap.a1,
+      apellido2: ap.a2,
       nac: p.fecha_nacimiento || null,
       tel: p.celular || p.telefono || null,
       email: emailReal,
@@ -74,8 +101,8 @@ module.exports = async (req, res) => {
 
     return res.status(200).json({
       ok: true,
-      rut: p.rut,
-      nombre: fila.nombre,
+      rut: rut,
+      nombre: [fila.nombre, fila.apellido, fila.apellido2].filter(Boolean).join(' '),
       email_pendiente: emailReal === null,   // true = el tótem debe pedir el correo real
       creado: true
     });
