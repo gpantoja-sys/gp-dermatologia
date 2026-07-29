@@ -77,7 +77,7 @@ function construirCliente(pac){
   if (!pac) return null;
   const rut = (pac.rut || '').trim();
   const nomRaw    = (pac.nombre || '').trim();
-  const lastName  = [pac.apellido, pac.apellido2].filter(Boolean).join(' ').trim();
+  let lastName    = [pac.apellido, pac.apellido2].filter(Boolean).join(' ').trim();
   // Si 'nombre' ya termina con los apellidos (por la carga masiva), quitarlos
   // para que firstName sea solo el nombre de pila y no se duplique.
   let firstName = nomRaw;
