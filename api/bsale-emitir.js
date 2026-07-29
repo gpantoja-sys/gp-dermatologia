@@ -372,7 +372,12 @@ module.exports = async (req, res) => {
       if (bsaleResult.ok && empresa === 'skintouch' && grupo.reembolsable) {
         certificado = await emitirCertificado({
           boleta: boletaGuardada, empresa, reembolsable: true,
-          paciente_rut, presupuesto_id: _presupuesto_id
+          paciente_rut, presupuesto_id: _presupuesto_id,
+          // Líneas del grupo (pagos manuales y de pack, sin presupuesto): así el
+          // certificado SIEMPRE lleva el detalle en "Prestaciones realizadas".
+          lineas: grupo.items.map(function (l) {
+            return { nombre: l.comment, monto: l.monto, prestacion_id: l.prestacion_id || null };
+          })
         });
       }
       if (bsaleResult.ok) await enviarWhatsApp(_host, paciente_rut, boletaGuardada, certificado && certificado.ok ? certificado.codigo : null);
