@@ -85,6 +85,38 @@ async function emitirCertificado(params){
       });
     }
 
+    // Sin presupuesto (pagos manuales de la cola y sesiones de pack): las líneas
+    // vienen del emisor (comment + monto + prestacion_id). Se enriquecen con la
+    // glosa del catálogo si la prestación está identificada.
+    if (!lineas.length && Array.isArray(params.lineas) && params.lineas.length){
+      const ids = params.lineas.map(function(l){ return l.prestacion_id; }).filter(Boolean);
+      const map = {};
+      if (ids.length){
+        const qp = await sb('prestaciones?id=in.(' + ids.join(',') + ')&select=id,nombre,codigo_dx,glosa_fonasa');
+        const parr = await qp.json().catch(function(){ return []; });
+        (Array.isArray(parr) ? parr : []).forEach(function(p){ map[p.id] = p; });
+      }
+      lineas = params.lineas.map(function(l){
+        const p = map[l.prestacion_id] || {};
+        return {
+          nombre: p.nombre || l.nombre || 'Atención médica',
+          glosa_certificado: p.nombre || l.nombre || '',
+          parametros: '',
+          codigo_dx: p.codigo_dx || '',
+          glosa_fonasa: p.glosa_fonasa || '',
+          monto: l.monto || 0
+        };
+      });
+    }
+
+    // Último respaldo: el concepto de la propia boleta, para que el certificado
+    // NUNCA salga con "Prestaciones realizadas" en blanco.
+    if (!lineas.length && boleta && (boleta.concepto || boleta.total)){
+      lineas = [{ nombre: boleta.concepto || 'Atención médica',
+                  glosa_certificado: boleta.concepto || '', parametros: '',
+                  codigo_dx: '', glosa_fonasa: '', monto: boleta.total || 0 }];
+    }
+
     // Nombre de la paciente (para mostrar en el certificado, no en la verificación pública).
     let nombre = null;
     if (paciente_rut){
