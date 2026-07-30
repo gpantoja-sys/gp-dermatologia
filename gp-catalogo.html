@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catálogo Maestro · GP Dermatología</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --crema:#f4efe7; --crema2:#fbf8f2; --verde:#1f3d34; --verde2:#2c5446;
+         --tinta:#26201a; --suave:#8a8076; --linea:#e3dccf; --mal:#b23b3b; --ok:#3d7a4f; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--crema);font-family:'Inter',system-ui,sans-serif;color:var(--tinta);min-height:100vh}
+
+  /* ── Portón de clave ── */
+  #porton{position:fixed;inset:0;background:var(--crema);z-index:50;display:flex;
+          align-items:center;justify-content:center;flex-direction:column;gap:14px}
+  #porton .caja{background:var(--crema2);border:1px solid var(--linea);border-radius:16px;
+                padding:34px 38px;text-align:center;box-shadow:0 6px 24px rgba(38,32,26,.08)}
+  #porton h1{font-family:'Newsreader',Georgia,serif;font-weight:500;font-size:22px;color:var(--verde);margin-bottom:4px}
+  #porton p{font-size:13px;color:var(--suave);margin-bottom:16px}
+  #porton input{font-family:inherit;font-size:18px;letter-spacing:4px;text-align:center;
+                padding:10px 14px;border:1px solid var(--linea);border-radius:10px;width:200px;background:#fff}
+  #porton button{font-family:inherit;font-size:14px;font-weight:600;margin-top:12px;display:block;width:100%;
+                 padding:10px;border:0;border-radius:10px;background:var(--verde);color:#fff;cursor:pointer}
+  #porton .err{color:var(--mal);font-size:12.5px;margin-top:10px;min-height:16px}
+
+  /* ── Cabecera ── */
+  .top{display:flex;align-items:center;gap:14px;padding:12px 20px;background:var(--crema2);
+       border-bottom:1px solid var(--linea);flex-wrap:wrap;position:sticky;top:0;z-index:10}
+  .marca img{height:40px;width:auto;max-width:110px;object-fit:contain;display:block}
+  .marca{display:flex;align-items:center;gap:10px}
+  .marca .t{font-family:'Newsreader',Georgia,serif;font-weight:500;font-size:18px;color:#1B2422;line-height:1.1}
+  .marca .s{font-size:11.5px;color:var(--suave)}
+  .top .acciones{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .btn{font-family:inherit;font-size:13.5px;font-weight:600;padding:9px 16px;border-radius:10px;
+       border:1px solid var(--linea);background:#fff;color:var(--verde);cursor:pointer}
+  .btn.pri{background:var(--verde);color:#fff;border-color:var(--verde)}
+  .btn:disabled{opacity:.5;cursor:default}
+
+  /* ── Filtros ── */
+  .filtros{display:flex;gap:8px;padding:12px 20px;flex-wrap:wrap;align-items:center}
+  .filtros input,.filtros select{font-family:inherit;font-size:13.5px;padding:8px 12px;
+        border:1px solid var(--linea);border-radius:10px;background:#fff;color:var(--tinta)}
+  .filtros input{width:260px}
+  .filtros .resumen{font-size:12.5px;color:var(--suave);margin-left:auto}
+
+  /* ── Tabla ── */
+  .envoltorio{padding:0 20px 30px;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;background:var(--crema2);border:1px solid var(--linea);
+        border-radius:12px;overflow:hidden;font-size:13px;min-width:900px}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--suave);
+     text-align:left;padding:10px 10px;border-bottom:1px solid var(--linea);background:#f0e9dd}
+  td{padding:9px 10px;border-bottom:1px solid var(--linea);vertical-align:middle}
+  tr:hover td{background:#f6f1e7;cursor:pointer}
+  tr.inactiva td{opacity:.45}
+  .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .cod{font-weight:600;white-space:nowrap;color:var(--verde)}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .pill.mayor{background:#e9d8d3;color:#7c3a2d}
+  .pill.menor{background:#dfe8d9;color:#3d5c34}
+  .pill.si{background:#dfe8e4;color:var(--verde)}
+  .pill.no{background:#eee7db;color:var(--suave)}
+  .pill.off{background:#f3d9d9;color:var(--mal)}
+
+  /* ── Ficha (modal) ── */
+  #velo{position:fixed;inset:0;background:rgba(38,32,26,.35);z-index:30;display:none;
+        align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+  #velo.on{display:flex}
+  .ficha{background:var(--crema2);border-radius:16px;width:100%;max-width:560px;
+         padding:26px 28px;box-shadow:0 10px 40px rgba(38,32,26,.2)}
+  .ficha h2{font-family:'Newsreader',Georgia,serif;font-weight:500;font-size:20px;color:var(--verde);margin-bottom:2px}
+  .ficha .sub{font-size:12px;color:var(--suave);margin-bottom:18px}
+  .campo{margin-bottom:13px}
+  .campo label{display:block;font-size:11.5px;font-weight:600;text-transform:uppercase;
+               letter-spacing:.05em;color:var(--suave);margin-bottom:4px}
+  .campo input,.campo select{width:100%;font-family:inherit;font-size:14px;padding:9px 12px;
+        border:1px solid var(--linea);border-radius:10px;background:#fff;color:var(--tinta)}
+  .fila2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .check{display:flex;align-items:center;gap:8px;font-size:14px;padding:6px 0}
+  .check input{width:18px;height:18px;accent-color:var(--verde)}
+  .ficha .pie{display:flex;gap:10px;margin-top:20px;align-items:center}
+  .ficha .pie .msj{font-size:12.5px;margin-left:auto}
+  .msj.mal{color:var(--mal)} .msj.ok{color:var(--ok)}
+  .total-vivo{font-size:13px;color:var(--suave);margin-top:-6px;margin-bottom:13px}
+
+  #aviso{margin:0 20px 12px;padding:10px 14px;border-radius:10px;background:#f3d9d9;
+         color:var(--mal);font-size:13px;display:none}
+  #cuerpo{display:none}
+</style>
+</head>
+<body>
+
+<!-- Portón de clave -->
+<div id="porton">
+  <div class="caja">
+    <h1>Catálogo Maestro</h1>
+    <p>Solo Dr. Pantoja y Andrea</p>
+    <input id="clave" type="password" inputmode="numeric" autocomplete="off"
+           placeholder="••••" onkeydown="if(event.key==='Enter')entrar()">
+    <button onclick="entrar()">Entrar</button>
+    <div class="err" id="clave-err"></div>
+  </div>
+</div>
+
+<div id="cuerpo">
+  <div class="top">
+    <div class="marca">
+      <img src="/Logo-gp-Vertic.png" alt="" onerror="this.style.display='none'">
+      <div><div class="t">Catálogo Maestro</div><div class="s">Prestaciones · precios · GP Dermatología</div></div>
+    </div>
+    <div class="acciones">
+      <button class="btn" id="btn-excel" onclick="exportarExcel()">Exportar Excel</button>
+      <button class="btn pri" onclick="abrirFicha(null)">+ Nueva prestación</button>
+    </div>
+  </div>
+
+  <div class="filtros">
+    <input id="f-texto" placeholder="Buscar por código o nombre…" oninput="pintar()">
+    <select id="f-cat" onchange="pintar()"><option value="">Todas las categorías</option></select>
+    <select id="f-tipo" onchange="pintar()">
+      <option value="">Mayor y menor</option>
+      <option value="mayor">Solo mayores</option>
+      <option value="menor">Solo menores</option>
+    </select>
+    <select id="f-estado" onchange="pintar()">
+      <option value="activas">Activas</option>
+      <option value="inactivas">Inactivas</option>
+      <option value="todas">Todas</option>
+    </select>
+    <span class="resumen" id="resumen"></span>
+  </div>
+
+  <div id="aviso"></div>
+
+  <div class="envoltorio">
+    <table>
+      <thead><tr>
+        <th>Código</th><th>Nombre</th><th>Categoría</th><th>Cirugía</th>
+        <th class="num">Honorario</th><th class="num">Insumo</th><th class="num">Total</th>
+        <th>Reembolsable</th><th>Estado</th>
+      </tr></thead>
+      <tbody id="filas"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Ficha de edición / creación -->
+<div id="velo" onclick="if(event.target===this)cerrarFicha()">
+  <div class="ficha">
+    <h2 id="ficha-titulo">Nueva prestación</h2>
+    <div class="sub" id="ficha-sub">Los cambios se guardan directo en el sistema y aparecen al instante en el cotizador y la caja.</div>
+
+    <div class="fila2">
+      <div class="campo"><label>Código</label>
+        <input id="e-codigo" placeholder="ej: CIR-29" autocomplete="off"></div>
+      <div class="campo"><label>Categoría</label>
+        <input id="e-categoria" list="cats" placeholder="ej: Cirugía" autocomplete="off">
+        <datalist id="cats"></datalist></div>
+    </div>
+
+    <div class="campo"><label>Nombre</label>
+      <input id="e-nombre" placeholder="Nombre de la prestación" autocomplete="off"></div>
+
+    <div class="fila2">
+      <div class="campo"><label>Honorario médico ($)</label>
+        <input id="e-honorario" inputmode="numeric" placeholder="0" oninput="totalVivo()"></div>
+      <div class="campo"><label>Insumos ($)</label>
+        <input id="e-insumo" inputmode="numeric" placeholder="0" oninput="totalVivo()"></div>
+    </div>
+    <div class="total-vivo" id="total-vivo">Total al paciente: $0</div>
+
+    <div class="fila2">
+      <div class="campo"><label>Cirugía mayor / menor</label>
+        <select id="e-tipo">
+          <option value="">— No aplica</option>
+          <option value="mayor">Mayor</option>
+          <option value="menor">Menor</option>
+        </select></div>
+      <div class="campo"><label>Indicación</label>
+        <input id="e-indicacion" list="inds" placeholder="ej: Estética / Médica" autocomplete="off">
+        <datalist id="inds"><option value="Estética"><option value="Médica"></datalist></div>
+    </div>
+
+    <div class="fila2">
+      <label class="check"><input type="checkbox" id="e-reembolsable"> Reembolsable (isapre / seguro)</label>
+      <label class="check"><input type="checkbox" id="e-activo" checked> Activa (visible en cotizador)</label>
+    </div>
+
+    <div class="pie">
+      <button class="btn pri" id="btn-guardar" onclick="guardar()">Guardar</button>
+      <button class="btn" onclick="cerrarFicha()">Cancelar</button>
+      <span class="msj" id="ficha-msj"></span>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// CATÁLOGO MAESTRO GP · edición directa de la tabla `prestaciones`
+//
+// · Clave de entrada: cambiar la constante CLAVE aquí abajo. Es un candado de
+//   puerta, no una caja fuerte: sirve para que Clarita u otra persona con la
+//   URL no cambie precios por accidente, pero no es seguridad bancaria.
+// · Crear, editar, activar/desactivar prestaciones. Nada se borra: para
+//   retirar una prestación se marca Inactiva y desaparece del cotizador,
+//   pero el historial de cobros antiguos la sigue encontrando.
+// · "Exportar Excel" genera el Catálogo Maestro GP con todas las columnas,
+//   incluida cirugía mayor/menor (requiere haber corrido catalogo-tipo.sql).
+// ─────────────────────────────────────────────────────────────────────────────
+const CLAVE = '3417';   // ← cámbiala por la que acuerden tú y Andrea
+
+const SUPABASE_URL = 'https://nirxkzkfcctdigvuapuc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pcnhremtmY2N0ZGlndnVhcHVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDY5MTUsImV4cCI6MjA5NTEyMjkxNX0.iGTkHTRgdsEDoUsvS9ApQtSRAJV52z-_IASlFBmPqDM';
+let sb = null;
+try{ sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+catch(e){ /* si el CDN no cargó, la página sigue viva y avisa al cargar */ }
+
+const $ = id => document.getElementById(id);
+const clp = n => '$' + Math.round(n||0).toLocaleString('es-CL');
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+let LISTA = [];            // todas las prestaciones (activas e inactivas)
+let HAY_TIPO = true;       // false si falta correr catalogo-tipo.sql
+let EDITANDO = null;       // id en edición, o null si es creación
+
+// ── Portón ──────────────────────────────────────────────────────────────────
+function entrar(){
+  if($('clave').value === CLAVE){
+    try{ sessionStorage.setItem('gp_catalogo_ok','1'); }catch(e){}
+    abrirTodo();
+  } else {
+    $('clave-err').textContent = 'Clave incorrecta';
+    $('clave').value = ''; $('clave').focus();
+  }
+}
+function abrirTodo(){
+  $('porton').style.display = 'none';
+  $('cuerpo').style.display = 'block';
+  cargar();
+}
+try{
+  if(sessionStorage.getItem('gp_catalogo_ok')==='1') abrirTodo();
+  else $('clave').focus();
+}catch(e){ $('clave').focus(); }
+
+// ── Carga ───────────────────────────────────────────────────────────────────
+async function cargar(){
+  if(!sb){ aviso('No cargó la conexión al sistema. Revisa internet y recarga la página.'); return; }
+  let r = await sb.from('prestaciones')
+    .select('id,codigo,nombre,categoria,indicacion,honorario_monto,insumo_monto,reembolsable,activo,cirugia_tipo')
+    .order('categoria').order('codigo');
+  if(r.error && /cirugia_tipo/.test(r.error.message||'')){
+    HAY_TIPO = false;
+    aviso('Falta correr catalogo-tipo.sql en Supabase: la columna cirugía mayor/menor aún no existe. El resto funciona igual.');
+    r = await sb.from('prestaciones')
+      .select('id,codigo,nombre,categoria,indicacion,honorario_monto,insumo_monto,reembolsable,activo')
+      .order('categoria').order('codigo');
+  }
+  if(r.error){ aviso('No pude cargar el catálogo: '+r.error.message); return; }
+  LISTA = r.data||[];
+  llenarCategorias();
+  pintar();
+}
+
+function aviso(txt){ const a=$('aviso'); a.textContent=txt; a.style.display='block'; }
+
+function llenarCategorias(){
+  const cats = [...new Set(LISTA.map(p=>p.categoria).filter(Boolean))]
+    .sort((a,b)=>a.localeCompare(b,'es'));
+  $('f-cat').innerHTML = '<option value="">Todas las categorías</option>' +
+    cats.map(c=>'<option>'+esc(c)+'</option>').join('');
+  $('cats').innerHTML = cats.map(c=>'<option value="'+esc(c)+'">').join('');
+}
+
+// ── Tabla ───────────────────────────────────────────────────────────────────
+function filtrada(){
+  const t = ($('f-texto').value||'').trim().toLowerCase();
+  const cat = $('f-cat').value, tipo = $('f-tipo').value, est = $('f-estado').value;
+  return LISTA.filter(p=>{
+    if(est==='activas' && !p.activo) return false;
+    if(est==='inactivas' && p.activo) return false;
+    if(cat && p.categoria!==cat) return false;
+    if(tipo && (p.cirugia_tipo||'')!==tipo) return false;
+    if(t && !((p.codigo||'')+' '+(p.nombre||'')).toLowerCase().includes(t)) return false;
+    return true;
+  });
+}
+
+function pintar(){
+  const lista = filtrada();
+  $('filas').innerHTML = lista.map(p=>{
+    const total = (p.honorario_monto||0)+(p.insumo_monto||0);
+    const tipo = p.cirugia_tipo==='mayor' ? '<span class="pill mayor">Mayor</span>'
+               : p.cirugia_tipo==='menor' ? '<span class="pill menor">Menor</span>' : '—';
+    return '<tr class="'+(p.activo?'':'inactiva')+'" onclick="abrirFicha('+p.id+')">'
+      + '<td class="cod">'+esc(p.codigo)+'</td>'
+      + '<td>'+esc(p.nombre)+'</td>'
+      + '<td>'+esc(p.categoria||'—')+'</td>'
+      + '<td>'+tipo+'</td>'
+      + '<td class="num">'+clp(p.honorario_monto)+'</td>'
+      + '<td class="num">'+clp(p.insumo_monto)+'</td>'
+      + '<td class="num"><b>'+clp(total)+'</b></td>'
+      + '<td><span class="pill '+(p.reembolsable?'si':'no')+'">'+(p.reembolsable?'Sí':'No')+'</span></td>'
+      + '<td><span class="pill '+(p.activo?'si':'off')+'">'+(p.activo?'Activa':'Inactiva')+'</span></td>'
+      + '</tr>';
+  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--suave);padding:24px">Nada que mostrar con estos filtros</td></tr>';
+  $('resumen').textContent = lista.length+' de '+LISTA.length+' prestaciones';
+}
+
+// ── Ficha ───────────────────────────────────────────────────────────────────
+function abrirFicha(id){
+  EDITANDO = id;
+  const p = id ? LISTA.find(x=>x.id===id) : null;
+  $('ficha-titulo').textContent = p ? (p.codigo+' · editar') : 'Nueva prestación';
+  $('e-codigo').value = p ? (p.codigo||'') : '';
+  $('e-nombre').value = p ? (p.nombre||'') : '';
+  $('e-categoria').value = p ? (p.categoria||'') : '';
+  $('e-honorario').value = p ? (p.honorario_monto||0) : '';
+  $('e-insumo').value = p ? (p.insumo_monto||0) : '';
+  $('e-tipo').value = p ? (p.cirugia_tipo||'') : '';
+  $('e-tipo').disabled = !HAY_TIPO;
+  $('e-indicacion').value = p ? (p.indicacion||'') : '';
+  $('e-reembolsable').checked = p ? !!p.reembolsable : false;
+  $('e-activo').checked = p ? !!p.activo : true;
+  $('ficha-msj').textContent=''; $('ficha-msj').className='msj';
+  totalVivo();
+  $('velo').classList.add('on');
+  if(!p) $('e-codigo').focus();
+}
+function cerrarFicha(){ $('velo').classList.remove('on'); EDITANDO=null; }
+function totalVivo(){
+  const t = (parseInt($('e-honorario').value,10)||0)+(parseInt($('e-insumo').value,10)||0);
+  $('total-vivo').textContent = 'Total al paciente: '+clp(t);
+}
+
+async function guardar(){
+  const msj = $('ficha-msj');
+  const codigo = $('e-codigo').value.trim();
+  const nombre = $('e-nombre').value.trim();
+  if(!codigo || !nombre){ msj.textContent='Falta código o nombre'; msj.className='msj mal'; return; }
+
+  // Código repetido en OTRA prestación → avisar antes de guardar
+  const choque = LISTA.find(p => (p.codigo||'').toLowerCase()===codigo.toLowerCase() && p.id!==EDITANDO);
+  if(choque){ msj.textContent='El código '+choque.codigo+' ya lo usa «'+choque.nombre+'»'; msj.className='msj mal'; return; }
+
+  const fila = {
+    codigo, nombre,
+    categoria: $('e-categoria').value.trim() || null,
+    indicacion: $('e-indicacion').value.trim() || null,
+    honorario_monto: parseInt($('e-honorario').value,10)||0,
+    insumo_monto: parseInt($('e-insumo').value,10)||0,
+    reembolsable: $('e-reembolsable').checked,
+    activo: $('e-activo').checked
+  };
+  if(HAY_TIPO) fila.cirugia_tipo = $('e-tipo').value || null;
+
+  $('btn-guardar').disabled = true;
+  msj.textContent='Guardando…'; msj.className='msj';
+  const r = EDITANDO
+    ? await sb.from('prestaciones').update(fila).eq('id', EDITANDO)
+    : await sb.from('prestaciones').insert(fila);
+  $('btn-guardar').disabled = false;
+  if(r.error){ msj.textContent='Error: '+r.error.message; msj.className='msj mal'; return; }
+  msj.textContent='Guardado ✓'; msj.className='msj ok';
+  await cargar();
+  setTimeout(cerrarFicha, 500);
+}
+
+// ── Excel maestro ───────────────────────────────────────────────────────────
+function exportarExcel(){
+  if(typeof XLSX === 'undefined'){ aviso('No cargó la librería de Excel. Revisa internet y recarga la página.'); return; }
+  const filas = LISTA.map(p=>({
+    'Código': p.codigo||'',
+    'Nombre': p.nombre||'',
+    'Categoría': p.categoria||'',
+    'Cirugía (mayor/menor)': p.cirugia_tipo==='mayor'?'Mayor':p.cirugia_tipo==='menor'?'Menor':'',
+    'Indicación': p.indicacion||'',
+    'Honorario médico': p.honorario_monto||0,
+    'Insumos': p.insumo_monto||0,
+    'Total paciente': (p.honorario_monto||0)+(p.insumo_monto||0),
+    'Reembolsable': p.reembolsable?'Sí':'No',
+    'Estado': p.activo?'Activa':'Inactiva'
+  }));
+  const ws = XLSX.utils.json_to_sheet(filas);
+  ws['!cols'] = [{wch:10},{wch:48},{wch:22},{wch:18},{wch:12},{wch:16},{wch:12},{wch:14},{wch:12},{wch:9}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Catálogo Maestro GP');
+  const hoy = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, 'Catalogo-Maestro-GP-'+hoy+'.xlsx');
+}
+</script>
+</body>
+</html>
