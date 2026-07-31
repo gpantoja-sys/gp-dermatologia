@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caja del día · GP Dermatología</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Newsreader:wght@500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --crema:#f4efe7; --crema2:#fbf8f2; --verde:#1f3d34; --verde2:#2c5446;
+    --tinta:#26201a; --suave:#8a8076; --linea:#e3dccf;
+    --ok:#2f7d5b; --mal:#b23b3b; --esp:#b8860b; --pack:#7a5c8a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--crema);color:var(--tinta);font-family:'Inter',system-ui,sans-serif;
+    line-height:1.5;padding:20px 16px 50px;display:flex;justify-content:center}
+  .wrap{max-width:1020px;width:100%}
+  h1{font-family:'Playfair Display',serif;font-weight:600;color:var(--verde);font-size:26px;margin:0}
+  .sub{color:var(--suave);font-size:13.5px;margin:0 0 16px}
+
+  .controles{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+  .modo{display:flex;background:var(--crema2);border:1px solid var(--linea);border-radius:11px;overflow:hidden}
+  .modo button{font-family:inherit;font-size:13.5px;font-weight:600;padding:9px 16px;border:none;
+    background:transparent;color:var(--suave);cursor:pointer}
+  .modo button.on{background:var(--verde);color:#fff}
+  input[type=date]{font-family:inherit;font-size:14px;padding:8px 11px;border:1px solid var(--linea);
+    border-radius:10px;background:#fff;color:var(--tinta)}
+  .sp{flex:1}
+  button.ghost{font-family:inherit;font-size:12.5px;font-weight:600;border-radius:9px;padding:8px 12px;
+    border:1px solid var(--verde);background:transparent;color:var(--verde);cursor:pointer}
+
+  .tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+  .tabs button{font-family:inherit;font-size:13.5px;font-weight:600;padding:10px 18px;border-radius:11px;
+    border:1px solid var(--linea);background:#fff;color:var(--verde);cursor:pointer}
+  .tabs button.on{background:var(--verde);color:#fff;border-color:var(--verde)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  @media(max-width:760px){ .grid2{grid-template-columns:1fr} }
+
+  .emp-card{background:var(--crema2);border:1px solid var(--linea);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+  .emp-h{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+  .emp-n{font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--verde)}
+  .emp-t{font-size:11px;color:var(--suave);text-transform:uppercase;letter-spacing:.06em}
+  .emp-bruto{margin-left:auto;font-family:ui-monospace,monospace;font-size:18px;font-weight:600}
+
+  .medios{border:1px solid var(--linea);border-radius:11px;overflow:hidden;margin-bottom:14px}
+  .mrow{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;font-size:14px;border-bottom:1px solid var(--linea)}
+  .mrow:last-child{border-bottom:none}
+  .mrow .ml{display:flex;align-items:center;gap:9px}
+  .mrow .mdot{width:9px;height:9px;border-radius:50%}
+  .mrow .mn{font-weight:500}
+  .mrow .mc{color:var(--suave);font-size:12px}
+  .mrow .mv{font-family:ui-monospace,monospace}
+  .mrow.tot{background:#f6f1e8;font-weight:600}
+
+  .bloque-t{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--suave);margin:4px 0 10px}
+  .ef{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+  .campo{flex:1;min-width:130px;display:flex;flex-direction:column;gap:4px}
+  .campo label{font-size:11.5px;color:var(--suave);font-weight:500}
+  .campo input{font-family:ui-monospace,monospace;font-size:15px;padding:9px 11px;border:1px solid var(--linea);
+    border-radius:9px;background:#fff;color:var(--tinta)}
+  .campo .ro{background:#f3efe6;color:var(--suave)}
+  button.save{font-family:inherit;font-size:13.5px;font-weight:600;border-radius:10px;padding:10px 16px;
+    border:1px solid var(--verde);background:var(--verde);color:#fff;cursor:pointer}
+  button.save:active{background:var(--verde2)}
+
+  .resumen{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+  .kpi{flex:1;min-width:120px;background:#fff;border:1px solid var(--linea);border-radius:11px;padding:11px 13px}
+  .kpi .kl{font-size:10.5px;color:var(--suave);text-transform:uppercase;letter-spacing:.05em}
+  .kpi .kv{font-family:ui-monospace,monospace;font-size:17px;font-weight:600;margin-top:2px}
+  .kpi.pack .kv{color:var(--pack)}
+
+  .alerta{font-size:13px;border-radius:10px;padding:10px 13px;margin-bottom:12px;line-height:1.5}
+  .alerta.ok{background:#eaf3ee;color:var(--ok);border:1px solid #cfe6da}
+  .alerta.warn{background:#f6ece1;color:#8a5a13;border:1px solid #e8d6bd}
+  .alerta.bad{background:#f6e9e9;color:var(--mal);border:1px solid #e7cccc}
+
+  .cobro{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--linea);font-size:13.5px;flex-wrap:wrap}
+  .cobro:last-child{border-bottom:none}
+  .cobro .cp{flex:1;min-width:0}
+  .cobro .cp .cr{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--suave)}
+  .cobro .cmonto{font-family:ui-monospace,monospace;font-weight:600}
+  .cobro input{width:92px;font-family:ui-monospace,monospace;font-size:13px;padding:6px 8px;border:1px solid var(--linea);border-radius:8px}
+  .cobro button{font-size:12px;font-weight:600;border-radius:8px;padding:6px 10px;border:1px solid var(--verde);background:transparent;color:var(--verde);cursor:pointer}
+  .cobro.done button{background:var(--ok);color:#fff;border-color:var(--ok)}
+  .cobro .tagm{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--suave)}
+
+  .cerrar{margin-top:14px;width:100%;font-family:inherit;font-size:14px;font-weight:600;border-radius:11px;
+    padding:13px;border:1px solid var(--verde);background:var(--verde);color:#fff;cursor:pointer}
+  .cerrado{margin-top:14px;text-align:center;font-size:13px;color:var(--ok);background:#eaf3ee;border:1px solid #cfe6da;border-radius:11px;padding:11px}
+
+  table.dia{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--crema2);
+    border:1px solid var(--linea);border-radius:14px;overflow:hidden}
+  table.dia th{font-size:11px;color:var(--suave);text-transform:uppercase;letter-spacing:.05em;
+    text-align:left;padding:11px 12px;border-bottom:1px solid var(--linea);background:#f6f1e8}
+  table.dia td{padding:10px 12px;border-bottom:1px solid var(--linea);vertical-align:top}
+  table.dia tr:last-child td{border-bottom:none}
+  table.dia td.m, table.dia th.m{font-family:ui-monospace,monospace;text-align:right;white-space:nowrap}
+  table.dia tr.trtot td{background:#f6f1e8;font-weight:600}
+  .prut{font-family:ui-monospace,monospace;font-size:11px;color:var(--suave)}
+  .chip{display:inline-block;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;
+    padding:2px 8px;border-radius:999px;background:#eee9de;color:var(--suave);margin:1px 2px 1px 0}
+  .chip.pack{background:#efe8f3;color:var(--pack)}
+  .seccion{font-family:'Playfair Display',serif;font-size:17px;color:var(--verde);font-weight:600;margin:18px 0 10px}
+
+  .vacio{text-align:center;color:var(--suave);padding:20px;font-size:13px}
+  #log{font-family:ui-monospace,monospace;font-size:12px;background:#fffdf9;border:1px solid var(--linea);
+    border-radius:10px;padding:11px;max-height:160px;overflow:auto;white-space:pre-wrap;margin-top:18px}
+  .l-ok{color:var(--ok)} .l-mal{color:var(--mal)} .l-dim{color:var(--suave)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:6px 0 14px;border-bottom:1px solid #E3E6E3;margin-bottom:18px">
+    <div style="line-height:1.2;justify-self:start">
+      <div style="font-family:'Newsreader',Georgia,serif;font-weight:500;font-size:20px;color:#1B2422">Caja del día</div>
+      <div style="font-size:12.5px;color:#7a8079;letter-spacing:.02em">Registro · conciliación · cierre <span id="chip-prueba" style="display:none;color:var(--esp);font-weight:600">· MODO PRUEBA</span></div>
+    </div>
+    <img src="/Logo-gp-Vertic.png" alt="" onerror="this.style.display='none'" style="height:80px;max-width:200px;width:auto;object-fit:contain;display:block;justify-self:center">
+    <div></div>
+  </div>
+
+  <div class="controles">
+    <div class="modo">
+      <button id="m-clarita" class="on" onclick="setModo('clarita')">Clarita · registro</button>
+      <button id="m-andrea" onclick="setModo('andrea')">Andrea · conciliación</button>
+    </div>
+    <input type="date" id="fecha" onchange="cargar()">
+    <span class="sp"></span>
+    <button class="ghost" onclick="cargar()">Refrescar</button>
+  </div>
+
+  <div class="tabs">
+    <button id="t-caja" class="on" onclick="setTab('caja')">Caja del día</button>
+    <button id="t-pac" onclick="setTab('pacientes')">Pacientes del día</button>
+    <button id="t-packs" onclick="setTab('packs')">Packs del día</button>
+  </div>
+
+  <div id="cont"></div>
+
+  <div id="log"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://nirxkzkfcctdigvuapuc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pcnhremtmY2N0ZGlndnVhcHVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDY5MTUsImV4cCI6MjA5NTEyMjkxNX0.iGTkHTRgdsEDoUsvS9ApQtSRAJV52z-_IASlFBmPqDM';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Modo prueba (?prueba=1): muestra SOLO los cobros y packs de prueba (es_prueba=true),
+// sin ver ni tocar la caja real. El efectivo y el cierre quedan bloqueados.
+const ES_PRUEBA = new URLSearchParams(location.search).has('prueba');
+
+const $ = id => document.getElementById(id);
+const clp = n => '$' + Math.round(n||0).toLocaleString('es-CL');
+function log(m,c){ const d=$('log'); const t=new Date().toLocaleTimeString('es-CL');
+  const s=document.createElement('div'); if(c)s.className=c; s.textContent='['+t+'] '+m; d.appendChild(s); d.scrollTop=d.scrollHeight; }
+
+const EMPRESAS = [ {id:1, nombre:'SkinTouch SpA', corto:'SkinTouch'}, {id:2, nombre:'LaserTouch Ltda.', corto:'LaserTouch'} ];
+const MEDIOS = [
+  { key:'transferencia', label:'Transferencia', color:'#4a6b8a', tarjeta:false },
+  { key:'webpay',        label:'WebPay',        color:'#2f7d5b', tarjeta:true  },
+  { key:'pos',           label:'POS',           color:'#b8860b', tarjeta:true  },
+  { key:'efectivo',      label:'Efectivo',      color:'#8a8076', tarjeta:false }
+];
+function normMedio(m){
+  const s=(m||'').toLowerCase();
+  if(s.indexOf('pack')>=0) return 'pack';   // sesión prepagada: sale de la billetera pack
+  if(s.indexOf('webpay')>=0||s.indexOf('web pay')>=0) return 'webpay';
+  if(s.indexOf('pos')>=0||s.indexOf('tarjeta')>=0) return 'pos';
+  if(s.indexOf('transf')>=0) return 'transferencia';
+  if(s.indexOf('efect')>=0||s.indexOf('cash')>=0) return 'efectivo';
+  return 'otro';
+}
+function medioInfo(k){
+  if(k==='pack') return {key:'pack',label:'Efectivo Pack',color:'#7a5c8a',tarjeta:false};
+  return MEDIOS.find(x=>x.key===k) || {key:k,label:k||'Otro',color:'#8a8076',tarjeta:false};
+}
+
+let MODO = 'clarita';
+let TAB  = 'caja';
+let COBROS = [];           // cobros del día (incluye medio 'pack')
+let CIERRES = {};          // cierres_caja por empresa_id
+let NOMBRES = {};          // nombre de paciente por RUT
+let PACKS_HOY = {};        // rut -> nombre(s) de pack creados hoy
+let TIPOS_HOY = {};        // rut -> {pack:true, abono:true} según lo comprado hoy
+let DEUDA_PACKS = 0;       // saldo vigente total de packs activos (referencia al cierre)
+
+// Nombre sin duplicar apellidos (carga masiva dejó nombre completo en `nombre`).
+function nombreCompleto(n, a){
+  const base=(n||'').trim(), ap=(a||'').trim();
+  if(!ap) return base;
+  if(base.toLowerCase().endsWith(ap.toLowerCase())) return base;
+  return (base+' '+ap).trim();
+}
+function nombreCobro(c){
+  const n = NOMBRES[c.paciente_rut];
+  if(n) return n + ' · ' + c.paciente_rut;
+  return c.paciente_rut ? c.paciente_rut : 'Sin identificar';
+}
+function nombreDe(rut){ return NOMBRES[rut] || rut || 'Sin identificar'; }
+
+function diaSantiago(iso){ return new Date(iso).toLocaleDateString('en-CA', {timeZone:'America/Santiago'}); }
+function hoySantiago(){ return new Date().toLocaleDateString('en-CA', {timeZone:'America/Santiago'}); }
+
+function setModo(m){
+  MODO=m;
+  $('m-clarita').classList.toggle('on', m==='clarita');
+  $('m-andrea').classList.toggle('on', m==='andrea');
+  render();
+}
+function setTab(t){
+  TAB=t;
+  $('t-caja').classList.toggle('on', t==='caja');
+  $('t-pac').classList.toggle('on', t==='pacientes');
+  $('t-packs').classList.toggle('on', t==='packs');
+  render();
+}
+
+async function cargar(){
+  const fecha = $('fecha').value || hoySantiago();
+  $('fecha').value = fecha;
+  // ventana UTC amplia (±2 días) que cubre el día de Santiago; luego se filtra al día exacto.
+  const base = new Date(fecha + 'T12:00:00Z').getTime();
+  const desde = new Date(base - 48*3600*1000).toISOString();
+  const hasta = new Date(base + 48*3600*1000).toISOString();
+
+  const { data, error } = await sb.from('cobros').select('*')
+    .eq('estado','pagado').eq('es_prueba', ES_PRUEBA).gte('fecha', desde).lt('fecha', hasta);
+  if(error){ log('cobros → '+error.message,'l-mal'); $('cont').innerHTML='<div class="vacio">Error leyendo cobros: '+error.message+'</div>'; return; }
+  COBROS = (data||[]).filter(c => diaSantiago(c.fecha) === fecha);
+
+  // Nombres de pacientes
+  NOMBRES = {};
+  const ruts = [...new Set(COBROS.map(c => c.paciente_rut).filter(r => r && r !== '0-0'))];
+  if(ruts.length){
+    const { data:pac } = await sb.from('pacientes').select('rut,nombre,apellido').in('rut', ruts);
+    (pac||[]).forEach(p => { NOMBRES[p.rut] = nombreCompleto(p.nombre, p.apellido); });
+  }
+
+  const { data:ci } = await sb.from('cierres_caja').select('*').eq('fecha', fecha);
+  CIERRES = {}; (ci||[]).forEach(r => CIERRES[r.empresa_id] = r);
+
+  // Packs creados en el día (para mostrar el nombre del pack en la pestaña Packs)
+  PACKS_HOY = {};
+  try{
+    const { data:pk } = await sb.from('packs')
+      .select('paciente_rut,nombre_pack,fecha_compra,es_prueba,tipo')
+      .neq('estado','anulado')     // los anulados no muestran su nombre en la caja
+      .gte('fecha_compra', desde).lt('fecha_compra', hasta);
+    TIPOS_HOY = {};
+    (pk||[]).filter(p => (!!p.es_prueba === ES_PRUEBA) && diaSantiago(p.fecha_compra) === fecha)
+      .forEach(p => {
+        PACKS_HOY[p.paciente_rut] = PACKS_HOY[p.paciente_rut]
+          ? PACKS_HOY[p.paciente_rut] + ' + ' + (p.nombre_pack||'Pack')
+          : (p.nombre_pack||'Pack');
+        const t = TIPOS_HOY[p.paciente_rut] || (TIPOS_HOY[p.paciente_rut] = {});
+        t[p.tipo === 'abono' ? 'abono' : 'pack'] = true;
+      });
+  }catch(e){ /* si aún no corre la migración, seguimos sin nombres de pack */ }
+
+  // Deuda vigente total (referencia al cierre)
+  try{
+    const { data:dp } = await sb.from('packs').select('saldo').eq('estado','activo').eq('es_prueba', ES_PRUEBA);
+    DEUDA_PACKS = (dp||[]).reduce((s,p)=>s+(p.saldo||0),0);
+  }catch(e){ DEUDA_PACKS = 0; }
+
+  render();
+}
+
+// Cobros con plata real (excluye consumos de pack: sesiones prepagadas que no
+// se esperan en banco/POS y no entran al cuadre).
+function cobrosDe(empId){ return COBROS.filter(c => c.empresa_id === empId && normMedio(c.medio_pago) !== 'pack'); }
+function packsDe(empId){ return COBROS.filter(c => c.empresa_id === empId && normMedio(c.medio_pago) === 'pack'); }
+function sumBy(arr, f){ return arr.reduce((s,x)=>s+(f(x)||0),0); }
+
+function render(){
+  const cont = $('cont'); cont.innerHTML='';
+  if(TAB==='pacientes'){ renderPacientes(cont); return; }
+  if(TAB==='packs'){ renderPacks(cont); return; }
+  // Caja del día: las dos empresas en columnas paralelas
+  const g = document.createElement('div'); g.className='grid2';
+  EMPRESAS.forEach(emp => {
+    g.insertAdjacentHTML('beforeend', MODO==='clarita' ? cardClarita(emp) : cardAndrea(emp));
+  });
+  cont.appendChild(g);
+}
+
+// ───────── PESTAÑA 1a · MODO CLARITA: totales + registro de efectivo ─────────
+function cardClarita(emp){
+  const cobros = cobrosDe(emp.id);
+  const bruto = sumBy(cobros, c=>c.monto);
+  let filas = '';
+  MEDIOS.forEach(m => {
+    const subset = cobros.filter(c => normMedio(c.medio_pago)===m.key);
+    if(!subset.length) return;
+    const v = sumBy(subset, c=>c.monto);
+    filas += '<div class="mrow"><span class="ml"><span class="mdot" style="background:'+m.color+'"></span>'
+      + '<span class="mn">'+m.label+'</span><span class="mc">· '+subset.length+'</span></span>'
+      + '<span class="mv">'+clp(v)+'</span></div>';
+  });
+  if(!filas) filas = '<div class="mrow"><span class="mc">Sin cobros este día</span><span></span></div>';
+
+  // Sesiones de pack del día: se muestran aparte, no suman al bruto (la plata
+  // entró cuando se compró el pack).
+  const packC = packsDe(emp.id);
+  if(packC.length){
+    filas += '<div class="mrow"><span class="ml"><span class="mdot" style="background:var(--pack)"></span>'
+      + '<span class="mn">Efectivo Pack · sin plata nueva</span><span class="mc">· '+packC.length+'</span></span>'
+      + '<span class="mv" style="color:var(--suave)">'+clp(sumBy(packC, c=>c.monto))+'</span></div>';
+  }
+
+  const efSistema = sumBy(cobros.filter(c=>normMedio(c.medio_pago)==='efectivo'), c=>c.monto);
+  const ci = CIERRES[emp.id] || {};
+  const reg = (ci.efectivo_registrado!=null) ? ci.efectivo_registrado : efSistema;
+  const ent = ci.efectivo_entregado || 0;
+
+  return '<div class="emp-card"><div class="emp-h"><span class="emp-n">'+emp.corto+'</span>'
+    + '<span class="emp-t">'+emp.nombre+'</span><span class="emp-bruto">'+clp(bruto)+'</span></div>'
+    + '<div class="medios">'+filas
+    + '<div class="mrow tot"><span class="ml"><span class="mn">Total bruto</span></span><span class="mv">'+clp(bruto)+'</span></div></div>'
+    + '<div class="bloque-t">Efectivo</div>'
+    + '<div class="ef">'
+    +   '<div class="campo"><label>Según sistema</label><input class="ro" value="'+clp(efSistema)+'" readonly></div>'
+    +   '<div class="campo"><label>Que entró (contado)</label><input id="ef-reg-'+emp.id+'" inputmode="numeric" value="'+reg+'"></div>'
+    +   '<div class="campo"><label>Entregado al Dr.</label><input id="ef-ent-'+emp.id+'" inputmode="numeric" value="'+ent+'"></div>'
+    +   '<button class="save" onclick="guardarEfectivo('+emp.id+')">Guardar</button>'
+    + '</div>'
+    + (ci.cuadrado ? '<div class="cerrado">Caja cerrada por Andrea</div>' : '')
+    + '</div>';
+}
+
+async function guardarEfectivo(empId){
+  if(ES_PRUEBA){ alert('Modo prueba: el registro de efectivo no se guarda, para no pisar la caja real del día.'); return; }
+  const fecha = $('fecha').value;
+  const reg = parseInt($('ef-reg-'+empId).value,10) || 0;
+  const ent = parseInt($('ef-ent-'+empId).value,10) || 0;
+  const { error } = await sb.from('cierres_caja').upsert({
+    fecha: fecha, empresa_id: empId,
+    efectivo_registrado: reg, efectivo_entregado: ent, registrado_por: 'Clarita'
+  }, { onConflict: 'fecha,empresa_id' });
+  if(error){ log('efectivo → '+error.message,'l-mal'); alert('Error: '+error.message); return; }
+  log('Efectivo guardado · '+EMPRESAS.find(e=>e.id===empId).corto,'l-ok');
+  cargar();
+}
+
+// ───────── PESTAÑA 1b · MODO ANDREA: conciliación + cuadre + cierre ─────────
+function cardAndrea(emp){
+  const cobros = cobrosDe(emp.id);
+  const bruto = sumBy(cobros, c=>c.monto);
+  const comision = sumBy(cobros, c=>c.comision_real);
+  const conciliados = cobros.filter(c=>c.conciliado);
+  const noConc = cobros.filter(c=>!c.conciliado);
+  const enCuenta = sumBy(conciliados, c=> (c.monto_conciliado!=null ? c.monto_conciliado : (c.monto-(c.comision_real||0))));
+  const espNeto = sumBy(conciliados, c=> c.monto-(c.comision_real||0));
+  const descalce = enCuenta - espNeto;
+  const porConfirmar = sumBy(noConc, c=>c.monto);
+  const pctConc = cobros.length ? Math.round(conciliados.length/cobros.length*100) : 0;
+
+  let alerta = '';
+  if(descalce !== 0){
+    alerta += '<div class="alerta bad">Descalce de '+clp(descalce)+': lo que llegó no coincide con el neto esperado de los cobros conciliados.</div>';
+  }
+  if(porConfirmar > 0){
+    alerta += '<div class="alerta warn">Por confirmar: '+noConc.length+' cobro(s) por '+clp(porConfirmar)+' que el sistema registró pero aún no se cruzan contra el portal/banco.</div>';
+  }
+  if(descalce===0 && porConfirmar===0 && cobros.length){
+    alerta += '<div class="alerta ok">Cobros cuadrados: lo registrado coincide con lo que llegó.</div>';
+  }
+  const efSistema = sumBy(cobros.filter(c=>normMedio(c.medio_pago)==='efectivo'), c=>c.monto);
+  const ci = CIERRES[emp.id];
+  if(!ci){
+    alerta += '<div class="alerta warn">Efectivo: Clarita aún no registró el del día.</div>';
+  } else {
+    const reg = ci.efectivo_registrado||0, ent = ci.efectivo_entregado||0;
+    const dSist = reg - efSistema, dEnt = reg - ent;
+    if(dSist===0 && dEnt===0){
+      alerta += '<div class="alerta ok">Efectivo cuadrado: entró '+clp(reg)+', entregado '+clp(ent)+'.</div>';
+    } else {
+      let msg = 'Efectivo: sistema '+clp(efSistema)+' · contado '+clp(reg)+' · entregado '+clp(ent)+'.';
+      if(dSist!==0) msg += ' Diferencia con sistema: '+clp(dSist)+'.';
+      if(dEnt!==0) msg += ' Sin entregar al Dr.: '+clp(dEnt)+'.';
+      alerta += '<div class="alerta bad">'+msg+'</div>';
+    }
+  }
+
+  // Sesiones de pack del día: informativas, fuera de la conciliación (la plata
+  // entró cuando se compró el pack; estas boletas no esperan abono en cuenta).
+  const packA = packsDe(emp.id);
+  if(packA.length){
+    alerta += '<div class="alerta ok">Efectivo Pack: '+packA.length+' sesión(es) por '+clp(sumBy(packA, c=>c.monto))+' — prepagadas, no esperan abono.</div>';
+  }
+
+  // ── Lista de cobros (conciliar uno a uno) ──
+  let lista = '';
+  if(!cobros.length){ lista = '<div class="vacio">Sin cobros este día</div>'; }
+  else cobros.forEach(c => {
+    const mi = medioInfo(normMedio(c.medio_pago));
+    const done = !!c.conciliado;
+    if(done){
+      const lleg = (c.monto_conciliado!=null ? c.monto_conciliado : (c.monto-(c.comision_real||0)));
+      const dc = lleg - (c.monto-(c.comision_real||0));
+      lista += '<div class="cobro done">'
+        + '<div class="cp"><span class="tagm" style="color:'+mi.color+'">'+mi.label+'</span> '
+        +   '<span class="cr">'+nombreCobro(c)+' · llegó '+clp(lleg)
+        +   (c.comision_real?(' · com '+clp(c.comision_real)):'')
+        +   (dc!==0?(' · <b style="color:var(--mal)">desc '+clp(dc)+'</b>'):'')+'</span></div>'
+        + '<span class="cmonto">'+clp(c.monto)+'</span>'
+        + '<button onclick="desconciliar('+c.id+')" style="border-color:var(--linea);color:var(--suave)">↺</button>'
+        + '</div>';
+    } else {
+      const comInput = mi.tarjeta
+        ? '<input id="com-'+c.id+'" inputmode="numeric" placeholder="comisión" value="'+(c.comision_real!=null?c.comision_real:'')+'">'
+        : '';
+      const llegInput = '<input id="lleg-'+c.id+'" inputmode="numeric" placeholder="llegó (neto)" value="'+(c.monto_conciliado!=null?c.monto_conciliado:'')+'">';
+      lista += '<div class="cobro">'
+        + '<div class="cp"><span class="tagm" style="color:'+mi.color+'">'+mi.label+'</span> '
+        +   '<span class="cr">'+nombreCobro(c)+'</span></div>'
+        + '<span class="cmonto">'+clp(c.monto)+'</span>'
+        + comInput + llegInput
+        + '<button onclick="conciliar('+c.id+','+(mi.tarjeta?1:0)+','+c.monto+')">Conciliar</button>'
+        + '</div>';
+    }
+  });
+
+  const cerrarBtn = ci && ci.cuadrado
+    ? '<div class="cerrado">Caja cerrada · '+(ci.cerrado_por||'Andrea')+'</div>'
+    : '<button class="cerrar" onclick="cerrarCaja('+emp.id+')">Cerrar caja del día</button>';
+
+  return '<div class="emp-card"><div class="emp-h"><span class="emp-n">'+emp.corto+'</span>'
+    + '<span class="emp-t">'+emp.nombre+'</span><span class="emp-bruto" style="font-size:13px;color:var(--suave)">'+pctConc+'% conc.</span></div>'
+    + '<div class="resumen">'
+    +   '<div class="kpi"><div class="kl">Bruto registrado</div><div class="kv">'+clp(bruto)+'</div></div>'
+    +   '<div class="kpi"><div class="kl">Comisión</div><div class="kv">'+clp(comision)+'</div></div>'
+    +   '<div class="kpi"><div class="kl">En cuenta</div><div class="kv">'+clp(enCuenta)+'</div></div>'
+    +   '<div class="kpi"><div class="kl">Por confirmar</div><div class="kv"'+(porConfirmar?' style="color:var(--esp)"':'')+'>'+clp(porConfirmar)+'</div></div>'
+    + '</div>'
+    + alerta
+    + '<div class="bloque-t">Cobros del día · registrado vs. lo que llegó</div>'
+    + lista
+    + cerrarBtn
+    + '</div>';
+}
+
+async function conciliar(cobroId, esTarjeta, monto){
+  const com = esTarjeta ? (parseInt(($('com-'+cobroId)||{}).value,10)||0) : 0;
+  const llegEl = $('lleg-'+cobroId);
+  const lleg = (llegEl && llegEl.value!=='') ? (parseInt(llegEl.value,10)||0) : (monto - com);
+  const { error } = await sb.from('cobros').update({
+    conciliado:true, comision_real:com, monto_conciliado:lleg, conciliado_en:new Date().toISOString()
+  }).eq('id', cobroId);
+  if(error){ log('conciliar → '+error.message,'l-mal'); alert('Error: '+error.message); return; }
+  log('Cobro '+cobroId+' conciliado · llegó '+clp(lleg),'l-ok');
+  cargar();
+}
+
+async function desconciliar(cobroId){
+  const { error } = await sb.from('cobros').update({
+    conciliado:false, monto_conciliado:null, conciliado_en:null
+  }).eq('id', cobroId);
+  if(error){ log('desconciliar → '+error.message,'l-mal'); return; }
+  log('Cobro '+cobroId+' reabierto','l-dim');
+  cargar();
+}
+
+async function cerrarCaja(empId){
+  if(ES_PRUEBA){ alert('Modo prueba: el cierre no se guarda, para no pisar la caja real del día.'); return; }
+  const fecha = $('fecha').value;
+  if(!confirm('¿Cerrar la caja de '+EMPRESAS.find(e=>e.id===empId).corto+' para el '+fecha+'?')) return;
+  const { error } = await sb.from('cierres_caja').upsert({
+    fecha: fecha, empresa_id: empId, cuadrado:true, cerrado_por:'Andrea', cerrado_en:new Date().toISOString()
+  }, { onConflict: 'fecha,empresa_id' });
+  if(error){ log('cerrar → '+error.message,'l-mal'); alert('Error: '+error.message); return; }
+  log('Caja cerrada · '+EMPRESAS.find(e=>e.id===empId).corto,'l-ok');
+  cargar();
+}
+
+// ───────── PESTAÑA 2 · PACIENTES DEL DÍA ─────────
+// Cada paciente con su total SkinTouch + LaserTouch del día, y los totales por
+// medio de pago. "Efectivo Pack" = lo pagado desde la billetera pack (recibo
+// previo): no es plata nueva, pero sí atención del día.
+function renderPacientes(cont){
+  if(!COBROS.length){ cont.innerHTML = '<div class="vacio">Sin movimientos este día</div>'; return; }
+
+  // Totales por medio (todas las empresas juntas)
+  const claves = ['transferencia','webpay','pos','efectivo','pack'];
+  let cards = '';
+  claves.forEach(k => {
+    const mi = medioInfo(k);
+    const v = sumBy(COBROS.filter(c=>normMedio(c.medio_pago)===k), c=>c.monto);
+    cards += '<div class="kpi'+(k==='pack'?' pack':'')+'"><div class="kl">'+mi.label+'</div><div class="kv">'+clp(v)+'</div></div>';
+  });
+  const otros = sumBy(COBROS.filter(c=>normMedio(c.medio_pago)==='otro'), c=>c.monto);
+  if(otros>0) cards += '<div class="kpi"><div class="kl">Otros</div><div class="kv">'+clp(otros)+'</div></div>';
+
+  // Agrupar por paciente. La COMPRA de un pack (anticipo) va en una fila
+  // separada de la ATENCIÓN del día: si alguien compra y consume el mismo
+  // día, son dos movimientos distintos con la misma plata — mostrarlos
+  // juntos en una fila la contaría dos veces sin explicación.
+  const por = {};
+  COBROS.forEach(c => {
+    const esVenta = c.proveedor_ref === 'pack_anticipo';
+    const k = (c.paciente_rut || 'sin-rut') + (esVenta ? '·venta' : '·atencion');
+    por[k] = por[k] || { rut: c.paciente_rut, venta: esVenta, skin:0, laser:0, medios:{} };
+    if(c.empresa_id === 1) por[k].skin += (c.monto||0);
+    if(c.empresa_id === 2) por[k].laser += (c.monto||0);
+    por[k].medios[normMedio(c.medio_pago)] = true;
+  });
+  // Ordenar por paciente (sus filas quedan juntas: primero la venta, luego la atención)
+  const arr = Object.values(por).sort((a,b)=>{
+    const ta = a.skin+a.laser, tb = b.skin+b.laser;
+    const ma = Math.max(...Object.values(por).filter(x=>x.rut===a.rut).map(x=>x.skin+x.laser));
+    const mb = Math.max(...Object.values(por).filter(x=>x.rut===b.rut).map(x=>x.skin+x.laser));
+    if(mb !== ma) return mb - ma;
+    if((a.rut||'') !== (b.rut||'')) return (a.rut||'') < (b.rut||'') ? -1 : 1;
+    return (b.venta?1:0) - (a.venta?1:0);
+  });
+
+  let filas = '';
+  arr.forEach(p => {
+    const chips = Object.keys(p.medios).map(k=>{
+      const mi = medioInfo(k);
+      return '<span class="chip'+(k==='pack'?' pack':'')+'">'+mi.label+'</span>';
+    }).join('');
+    const tv = TIPOS_HOY[p.rut] || {};
+    const rotVenta = (tv.abono && tv.pack) ? 'Compra de pack + Abono PreQ'
+                   : tv.abono ? 'Compra de Abono PreQ'
+                   : 'Compra de pack';
+    const rotulo = p.venta
+      ? '<span class="chip pack">'+rotVenta+'</span>'
+      : '';
+    filas += '<tr><td>'+nombreDe(p.rut)+' '+rotulo+'<br><span class="prut">'+(p.rut||'—')+(p.venta?' · anticipo (recibo, sin boleta)':'')+'</span></td>'
+      + '<td class="m">'+clp(p.skin)+'</td>'
+      + '<td class="m">'+clp(p.laser)+'</td>'
+      + '<td class="m"><b>'+clp(p.skin+p.laser)+'</b></td>'
+      + '<td>'+chips+'</td></tr>';
+  });
+
+  const fresco = sumBy(COBROS.filter(c=>normMedio(c.medio_pago)!=='pack'), c=>c.monto);
+  const depack = sumBy(COBROS.filter(c=>normMedio(c.medio_pago)==='pack'), c=>c.monto);
+  const nPac = new Set(arr.map(p=>p.rut||'sin-rut')).size;
+  filas += '<tr class="trtot"><td>Total del día · '+nPac+' paciente(s)</td>'
+    + '<td class="m">'+clp(sumBy(arr,p=>p.skin))+'</td>'
+    + '<td class="m">'+clp(sumBy(arr,p=>p.laser))+'</td>'
+    + '<td class="m">'+clp(fresco+depack)+'</td><td></td></tr>';
+
+  cont.innerHTML =
+    '<div class="resumen">'+cards+'</div>'
+    + '<div class="alerta ok" style="margin-bottom:14px">Plata nueva del día: <b>'+clp(fresco)+'</b> · Efectivo Pack (billetera prepagada): <b>'+clp(depack)+'</b>. Si un paciente compró un pack y lo usó el mismo día, verás dos filas: la compra (plata que entró) y la atención (lo que gastó de su billetera). Es la misma plata en dos momentos, no un cobro doble.</div>'
+    + '<table class="dia"><thead><tr><th>Paciente</th><th class="m">SkinTouch</th><th class="m">LaserTouch</th><th class="m">Total</th><th>Medios</th></tr></thead>'
+    + '<tbody>'+filas+'</tbody></table>';
+}
+
+// ───────── PESTAÑA 3 · PACKS DEL DÍA ─────────
+// Ventas de packs (anticipos que entraron hoy, con su forma de pago y desglose
+// por empresa), sesiones usadas hoy (efectivo pack) y resumen para el cierre.
+function renderPacks(cont){
+  const ventas = COBROS.filter(c => c.proveedor_ref === 'pack_anticipo');
+  const consumos = COBROS.filter(c => normMedio(c.medio_pago) === 'pack');
+
+  // ── Ventas agrupadas por paciente ──
+  const vp = {};
+  ventas.forEach(c => {
+    const r = c.paciente_rut || 'sin-rut';
+    vp[r] = vp[r] || { rut:c.paciente_rut, skin:0, laser:0, medios:{} };
+    if(c.empresa_id===1) vp[r].skin += (c.monto||0);
+    if(c.empresa_id===2) vp[r].laser += (c.monto||0);
+    vp[r].medios[normMedio(c.medio_pago)] = true;
+  });
+  const varr = Object.values(vp);
+  let vfilas = '';
+  varr.forEach(p => {
+    const chips = Object.keys(p.medios).map(k=>'<span class="chip">'+medioInfo(k).label+'</span>').join('');
+    vfilas += '<tr><td>'+nombreDe(p.rut)+'<br><span class="prut">'+(p.rut||'—')
+      + (PACKS_HOY[p.rut] ? ' · '+PACKS_HOY[p.rut] : '')+'</span></td>'
+      + '<td>'+chips+'</td>'
+      + '<td class="m">'+clp(p.skin)+'</td>'
+      + '<td class="m">'+clp(p.laser)+'</td>'
+      + '<td class="m"><b>'+clp(p.skin+p.laser)+'</b></td></tr>';
+  });
+  if(varr.length){
+    vfilas += '<tr class="trtot"><td>Total vendido en packs</td><td></td>'
+      + '<td class="m">'+clp(sumBy(varr,p=>p.skin))+'</td>'
+      + '<td class="m">'+clp(sumBy(varr,p=>p.laser))+'</td>'
+      + '<td class="m">'+clp(sumBy(varr,p=>p.skin+p.laser))+'</td></tr>';
+  }
+  const vtabla = varr.length
+    ? '<table class="dia"><thead><tr><th>Paciente · pack</th><th>Pago</th><th class="m">SkinTouch</th><th class="m">LaserTouch</th><th class="m">Total</th></tr></thead><tbody>'+vfilas+'</tbody></table>'
+    : '<div class="vacio">No se vendieron packs este día</div>';
+
+  // ── Sesiones usadas agrupadas por paciente ──
+  const cp = {};
+  consumos.forEach(c => {
+    const r = c.paciente_rut || 'sin-rut';
+    cp[r] = cp[r] || { rut:c.paciente_rut, skin:0, laser:0 };
+    if(c.empresa_id===1) cp[r].skin += (c.monto||0);
+    if(c.empresa_id===2) cp[r].laser += (c.monto||0);
+  });
+  const carr = Object.values(cp);
+  let cfilas = '';
+  carr.forEach(p => {
+    cfilas += '<tr><td>'+nombreDe(p.rut)+'<br><span class="prut">'+(p.rut||'—')+'</span></td>'
+      + '<td class="m">'+clp(p.skin)+'</td>'
+      + '<td class="m">'+clp(p.laser)+'</td>'
+      + '<td class="m"><b>'+clp(p.skin+p.laser)+'</b></td></tr>';
+  });
+  if(carr.length){
+    cfilas += '<tr class="trtot"><td>Total usado de packs</td>'
+      + '<td class="m">'+clp(sumBy(carr,p=>p.skin))+'</td>'
+      + '<td class="m">'+clp(sumBy(carr,p=>p.laser))+'</td>'
+      + '<td class="m">'+clp(sumBy(carr,p=>p.skin+p.laser))+'</td></tr>';
+  }
+  const ctabla = carr.length
+    ? '<table class="dia"><thead><tr><th>Paciente</th><th class="m">SkinTouch</th><th class="m">LaserTouch</th><th class="m">Total</th></tr></thead><tbody>'+cfilas+'</tbody></table>'
+    : '<div class="vacio">No se usaron sesiones de pack este día</div>';
+
+  // ── Resumen ──
+  const totVenta = sumBy(ventas, c=>c.monto);
+  const totCons = sumBy(consumos, c=>c.monto);
+  cont.innerHTML =
+    '<div class="resumen">'
+    + '<div class="kpi"><div class="kl">Packs vendidos hoy</div><div class="kv">'+clp(totVenta)+'</div></div>'
+    + '<div class="kpi pack"><div class="kl">Efectivo Pack usado hoy</div><div class="kv">'+clp(totCons)+'</div></div>'
+    + '<div class="kpi"><div class="kl">Deuda vigente a pacientes</div><div class="kv">'+clp(DEUDA_PACKS)+'</div></div>'
+    + '</div>'
+    + '<div class="alerta warn" style="margin-bottom:14px">La venta del pack entra a la caja con su medio de pago real (Clarita la registra verificada). El "Efectivo Pack" no es plata nueva: sale de la billetera prepagada de la paciente.</div>'
+    + '<div class="seccion">Packs vendidos hoy</div>' + vtabla
+    + '<div class="seccion">Sesiones usadas hoy (Efectivo Pack)</div>' + ctabla;
+}
+
+// ───────── arranque ─────────
+if(ES_PRUEBA) $('chip-prueba').style.display='inline';
+$('fecha').value = hoySantiago();
+cargar();
+</script>
+</body>
+</html>
