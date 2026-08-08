@@ -700,5 +700,107 @@ function suscribir(){
 // ---- arranque ----
 (async ()=>{ await cargarEmpresas(); await cargarCatalogoManual(); await cargarCola(); suscribir(); })();
 </script>
+<script>
+(function(){
+/* ─────────────────────────────────────────────────────────────────────────────
+   AVISO "REQUIERE RESERVA" · bloque universal
+   Pegar al FINAL de gp-cola.html, gp-preparar-dia.html y gp-presupuesto.html
+   (después de todo lo demás). El mismo bloque sirve para los tres.
+
+   Qué hace: pregunta a la base qué pacientes tienen la exigencia activa y
+   pone una marca ámbar junto a su RUT, aparezca donde aparezca en la pantalla.
+   No toca la lógica de cada panel: sólo mira lo que ya está pintado, así que
+   sigue funcionando aunque el panel cambie por dentro.
+   ───────────────────────────────────────────────────────────────────────────── */
+  var MONTO = 95000;                       // valor de la reserva (= consulta)
+  var SUPABASE_URL = 'https://nirxkzkfcctdigvuapuc.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pcnhremtmY2N0ZGlndnVhcHVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDY5MTUsImV4cCI6MjA5NTEyMjkxNX0.iGTkHTRgdsEDoUsvS9ApQtSRAJV52z-_IASlFBmPqDM';
+
+  if(typeof supabase === 'undefined') return;               // sin librería, sin drama
+  var _sb;
+  try{ _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }catch(e){ return; }
+
+  var CON_RESERVA = null;                  // Set de RUTs marcados
+  var pintando = false;
+  var RE_RUT = /\b(\d{1,3}(?:\.\d{3})*|\d{4,9})-([\dkK])\b/g;
+  function norm(t){ return String(t).replace(/[^0-9kK]/g,'').toUpperCase(); }
+
+  async function cargarRuts(){
+    try{
+      var r = await _sb.from('pacientes').select('rut').eq('requiere_reserva', true).limit(500);
+      if(r.error) return;
+      CON_RESERVA = new Set((r.data||[]).map(function(p){ return norm(p.rut); }));
+      marcar();
+    }catch(e){ /* sin marca, el panel sigue igual */ }
+  }
+
+  function chip(){
+    var s = document.createElement('span');
+    s.className = 'gp-chip-reserva';
+    s.textContent = '⚑ Requiere reserva ' + '$' + MONTO.toLocaleString('es-CL');
+    s.title = 'Este paciente faltó antes. Corresponde cobrar la reserva antes de confirmar la hora.';
+    s.style.cssText = 'display:inline-block;margin-left:7px;padding:2px 9px;border-radius:999px;'
+      + 'background:#fdf6e3;color:#8a6410;border:1px solid #ecd9a8;font-size:10.5px;font-weight:700;'
+      + 'letter-spacing:.03em;text-transform:uppercase;vertical-align:middle;white-space:nowrap;'
+      + "font-family:'Inter',system-ui,sans-serif";
+    return s;
+  }
+
+  function marcar(){
+    if(!CON_RESERVA || !CON_RESERVA.size || pintando) return;
+    pintando = true;
+    try{
+      var it = document.createNodeIterator(document.body, NodeFilter.SHOW_TEXT, {
+        acceptNode: function(n){
+          if(!n.nodeValue || n.nodeValue.length < 7) return NodeFilter.FILTER_REJECT;
+          var p = n.parentNode;
+          if(!p || p.nodeType !== 1) return NodeFilter.FILTER_REJECT;
+          var tag = p.tagName;
+          if(tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA') return NodeFilter.FILTER_REJECT;
+          if(p.classList && p.classList.contains('gp-chip-reserva')) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+      var objetivo = [], n;
+      while((n = it.nextNode())){
+        RE_RUT.lastIndex = 0;
+        var m, hit = false;
+        while((m = RE_RUT.exec(n.nodeValue))){
+          if(CON_RESERVA.has(norm(m[0]))){ hit = true; break; }
+        }
+        if(!hit) continue;
+        // Colgamos la marca del bloque que contiene al RUT, una sola vez.
+        var caja = n.parentNode;
+        for(var i=0; i<3 && caja && caja !== document.body; i++){
+          if(caja.getAttribute && caja.getAttribute('data-gp-reserva') === '1') break;
+          caja = caja.parentNode;
+        }
+        var anfitrion = n.parentNode;
+        if(anfitrion.getAttribute('data-gp-reserva') === '1') continue;
+        if(anfitrion.parentNode && anfitrion.parentNode.querySelector
+           && anfitrion.parentNode.querySelector(':scope > .gp-chip-reserva')) continue;
+        objetivo.push(anfitrion);
+      }
+      objetivo.forEach(function(elm){
+        elm.setAttribute('data-gp-reserva','1');
+        elm.appendChild(chip());
+      });
+    }catch(e){ /* nunca romper el panel por un adorno */ }
+    pintando = false;
+  }
+
+  /* Los paneles se redibujan solos (realtime): volvemos a marcar tras cada cambio */
+  var t = null;
+  try{
+    new MutationObserver(function(){
+      if(pintando) return;
+      clearTimeout(t); t = setTimeout(marcar, 120);
+    }).observe(document.body, {childList:true, subtree:true});
+  }catch(e){}
+
+  cargarRuts();
+  setInterval(cargarRuts, 5*60*1000);      // refresca la lista cada 5 min
+})();
+</script>
 </body>
 </html>
